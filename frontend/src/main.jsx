@@ -1,0 +1,1467 @@
+import React, { useState, useEffect } from "react";
+import { createRoot } from "react-dom/client";
+import "./style.css";
+let csrf = "";
+function formatError(value) {
+  if (typeof value === "string") return value;
+  if (Array.isArray(value)) return value.map(formatError).join(" ");
+  if (value && typeof value === "object")
+    return value.message || Object.values(value).map(formatError).join(" ");
+  return "Không thể thực hiện thao tác.";
+}
+async function api(path, body, method) {
+  const response = await fetch("/api/" + path, {
+    method: method || (body ? "POST" : "GET"),
+    credentials: "same-origin",
+    headers:
+      body instanceof FormData
+        ? { "X-CSRFToken": csrf }
+        : { "Content-Type": "application/json", "X-CSRFToken": csrf },
+    body: body
+      ? body instanceof FormData
+        ? body
+        : JSON.stringify(body)
+      : undefined,
+  });
+  const d = await response
+    .json()
+    .catch(() => ({ error: "Máy chủ không trả về dữ liệu hợp lệ." }));
+  if (!response.ok) throw new Error(formatError(d.error));
+  if (d.csrf) csrf = d.csrf;
+  return d;
+}
+const sections = [
+  ["⌂", "home", "Trang chủ"],
+  ["♙", "accounts", "Quản lý tài khoản"],
+  ["▣", "courses", "Quản lý khóa học"],
+  ["◷", "shifts", "Quản lý ca học"],
+  ["♧", "classes", "Danh sách lớp học"],
+  ["⊞", "enrollments", "Thành viên lớp học"],
+  ["▦", "schedules", "Quản lý lịch học"],
+  ["▤", "assignments", "Quản lý bài tập"],
+  ["↗", "allocations", "Giao bài tập"],
+  ["⇧", "submissions", "Theo dõi bài nộp"],
+  ["✎", "comments", "Nhận xét bài tập"],
+  ["⚑", "exceptions", "Ngoại lệ bài nộp"],
+  ["▧", "grades", "Quản lý điểm"],
+  ["✓", "progress", "Trạng thái nộp bài"],
+  ["⌁", "learning", "Dữ liệu học tập"],
+  ["↺", "retakes", "Yêu cầu học lại"],
+];
+function Logo() {
+  return (
+    <div className="logo">
+      The <strong>Toeic</strong> Lab<span>╰────────╯</span>
+    </div>
+  );
+}
+function App() {
+  const [user, U] = useState(undefined),
+    [section, S] = useState("home"),
+    [error, E] = useState(""),
+    [toast, T] = useState(""),
+    [modal, M] = useState(null),
+    [refresh, R] = useState(0);
+  useEffect(() => {
+    api("auth/session/")
+      .then((d) => U(d.user))
+      .catch((e) => E(e.message));
+  }, []);
+  const run = async (fn) => {
+    E("");
+    try {
+      return await fn();
+    } catch (e) {
+      E(e.message);
+      return null;
+    }
+  };
+  function notify(t) {
+    T(t);
+    setTimeout(() => T(""), 6000);
+  }
+  async function signout() {
+    await api("auth/logout/", {});
+    U(null);
+    S("home");
+  }
+  if (user === undefined)
+    return <div className="loading">Đang kết nối hệ thống…{error}</div>;
+  if (!user || user.must_change_password)
+    return (
+      <Auth
+        user={user}
+        onLogin={U}
+        run={run}
+        error={error}
+        notify={notify}
+        toast={toast}
+      />
+    );
+  const visible = sections.filter(([_, key]) =>
+    user.role === "HV"
+      ? ![
+          "accounts",
+          "exceptions",
+          "enrollments",
+          "courses",
+          "shifts",
+        ].includes(key)
+      : true,
+  );
+  return (
+    <div className="app">
+      <aside>
+        <Logo />
+        <nav>
+          {visible.map(([icon, key, name]) => (
+            <button
+              key={key}
+              className={section === key ? "selected" : ""}
+              onClick={() => {
+                S(key);
+                E("");
+              }}
+            >
+              <span>{icon}</span>
+              {name}
+            </button>
+          ))}
+        </nav>
+        <button className="logout" onClick={() => run(signout)}>
+          ⇥　Đăng xuất
+        </button>
+      </aside>
+      <main>
+        <header>
+          <h1>{sections.find((x) => x[1] === section)?.[2]}</h1>
+          <button className="profile" onClick={() => M({ type: "profile" })}>
+            <span className="avatar">{user.name?.split(" ").pop()?.[0]}</span>
+            <span>
+              {user.name}
+              <small>{user.role_label}</small>
+            </span>
+            ⌄
+          </button>
+        </header>
+        {error && (
+          <div role="alert" className="alert">
+            {error}
+            <button onClick={() => E("")}>×</button>
+          </div>
+        )}
+        {toast && (
+          <div role="status" className="toast">
+            ✓ {toast}
+          </div>
+        )}
+        <div className="content">
+          {section === "progress" ? (
+            <Progress run={run} />
+          ) : ["home", "learning"].includes(section) ? (
+            <Dashboard
+              learning={section === "learning"}
+              run={run}
+              user={user}
+            />
+          ) : (
+            <Records
+              key={section}
+              kind={section}
+              user={user}
+              run={run}
+              notify={notify}
+              refresh={refresh}
+              reload={() => R((x) => x + 1)}
+              open={M}
+            />
+          )}
+        </div>
+        <footer>The Toeic Lab · Hệ thống quản lý vận hành lớp học</footer>
+      </main>
+      {modal && (
+        <div
+          className="overlay"
+          onMouseDown={(e) => e.target === e.currentTarget && M(null)}
+        >
+          <div className="modal">
+            <button className="close" onClick={() => M(null)}>
+              ×
+            </button>
+            {modal.type === "allocate" ? (
+              <AllocationEditor
+                assignment={modal.id}
+                done={() => {
+                  M(null);
+                  R((x) => x + 1);
+                }}
+                notify={notify}
+              />
+            ) : modal.type === "profile" ? (
+              <>
+                <h2>Thông tin tài khoản</h2>
+                <dl>
+                  {[
+                    ["Mã người dùng", user.code],
+                    ["Họ và tên", user.name],
+                    ["Vai trò", user.role_label],
+                    ["Email", user.email],
+                    ["Giới tính", user.gender],
+                    ["Số điện thoại", user.phone],
+                    ["Địa chỉ", user.address],
+                  ].map(([k, v]) => (
+                    <React.Fragment key={k}>
+                      <dt>{k}</dt>
+                      <dd>{v}</dd>
+                    </React.Fragment>
+                  ))}
+                </dl>
+                <button
+                  className="primary"
+                  onClick={() => M({ type: "password" })}
+                >
+                  Đổi mật khẩu
+                </button>
+              </>
+            ) : modal.type === "password" ? (
+              <Password
+                run={run}
+                done={() => {
+                  U(null);
+                  M(null);
+                }}
+              />
+            ) : (
+              <Editor
+                spec={modal}
+                run={run}
+                notify={notify}
+                done={() => {
+                  M(null);
+                  R((x) => x + 1);
+                }}
+              />
+            )}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+function Auth({ user, onLogin, run, error, notify, toast }) {
+  const [mode, SM] = useState("login"),
+    [busy, B] = useState(false),
+    [show, SH] = useState(false),
+    [email, SE] = useState("");
+  async function submit(e) {
+    e.preventDefault();
+    B(true);
+    let d = Object.fromEntries(new FormData(e.target));
+    if (mode === "login") d.remember = !!d.remember;
+    await run(async () => {
+      if (user) {
+        await api("auth/password/", d);
+        onLogin(null);
+        notify("Đã đổi mật khẩu. Vui lòng đăng nhập lại.");
+      } else if (mode === "login") {
+        const result = await api("auth/login/", d);
+        onLogin(result.user);
+      } else if (mode === "forgot") {
+        await api("auth/forgot/", d);
+        SE(d.email);
+        SM("reset");
+        notify("Nếu email hợp lệ, mã xác thực đã được gửi.");
+      } else {
+        await api("auth/reset/", d);
+        SM("login");
+        notify("Đã đặt lại mật khẩu.");
+      }
+    });
+    B(false);
+  }
+  return (
+    <div className="auth">
+      {toast && <div className="toast">{toast}</div>}
+      <Logo />
+      <form onSubmit={submit}>
+        <h2>
+          {user
+            ? "Đổi mật khẩu lần đầu"
+            : mode === "login"
+              ? "Đăng nhập"
+              : mode === "forgot"
+                ? "Quên mật khẩu"
+                : "Đặt lại mật khẩu"}
+        </h2>
+        <p className="muted">Hệ thống quản lý học tập The Toeic Lab</p>
+        {error && (
+          <div role="alert" className="alert">
+            {error}
+          </div>
+        )}
+        {user ? (
+          <label>
+            Mật khẩu hiện tại
+            <input
+              name="old_password"
+              type="password"
+              autoComplete="current-password"
+              required
+            />
+          </label>
+        ) : (
+          <label>
+            Email
+            <input
+              type="email"
+              name="email"
+              defaultValue={email}
+              placeholder="Nhập email của bạn"
+              autoComplete="email"
+              required
+            />
+          </label>
+        )}
+        {mode === "reset" && !user && (
+          <label>
+            Mã xác thực
+            <input
+              name="code"
+              pattern="[0-9]{6}"
+              maxLength={6}
+              required
+              placeholder="Mã 6 chữ số"
+            />
+          </label>
+        )}
+        {(mode !== "forgot" || user) && (
+          <label>
+            {mode === "login" && !user
+              ? "Mật khẩu"
+              : "Mật khẩu mới (ít nhất 10 ký tự)"}
+            <div className="password">
+              <input
+                name="password"
+                type={show ? "text" : "password"}
+                required
+                autoComplete={
+                  mode === "login" ? "current-password" : "new-password"
+                }
+                minLength={mode === "login" ? undefined : 10}
+                placeholder="Nhập mật khẩu"
+              />
+              <button
+                type="button"
+                onClick={() => SH(!show)}
+                aria-label="Hiện hoặc ẩn mật khẩu"
+              >
+                ◉
+              </button>
+            </div>
+          </label>
+        )}
+        {mode === "login" && !user && (
+          <div className="authlinks">
+            <label>
+              <input type="checkbox" name="remember" /> Ghi nhớ đăng nhập
+            </label>
+            <button type="button" onClick={() => SM("forgot")}>
+              Quên mật khẩu?
+            </button>
+          </div>
+        )}
+        <button className="primary full" disabled={busy}>
+          {busy
+            ? "Đang xử lý…"
+            : user
+              ? "Đổi mật khẩu"
+              : mode === "login"
+                ? "Đăng nhập"
+                : mode === "forgot"
+                  ? "Gửi mã xác thực"
+                  : "Xác nhận"}
+        </button>
+        {mode === "reset" && !user && (
+          <button
+            className="full link"
+            type="button"
+            onClick={() =>
+              run(async () => {
+                await api("auth/forgot/", { email });
+                notify("Nếu email hợp lệ, mã mới đã được gửi.");
+              })
+            }
+          >
+            Gửi lại mã xác thực
+          </button>
+        )}
+        {mode !== "login" && !user && (
+          <button
+            className="full link"
+            type="button"
+            onClick={() => SM("login")}
+          >
+            Quay lại đăng nhập
+          </button>
+        )}
+      </form>
+      <p className="authfoot">Quản lý tập trung · Kết nối việc dạy và học</p>
+    </div>
+  );
+}
+function Password({ run, done }) {
+  return (
+    <form
+      onSubmit={(e) => {
+        e.preventDefault();
+        const d = Object.fromEntries(new FormData(e.target));
+        run(async () => {
+          await api("auth/password/", d);
+          done();
+        });
+      }}
+    >
+      <h2>Đổi mật khẩu</h2>
+      <label>
+        Mật khẩu hiện tại
+        <input name="old_password" type="password" required />
+      </label>
+      <label>
+        Mật khẩu mới
+        <input name="password" type="password" minLength={10} required />
+      </label>
+      <p className="muted">
+        Sau khi đổi mật khẩu, hệ thống sẽ đăng xuất các phiên hiện tại.
+      </p>
+      <button className="primary">Xác nhận</button>
+    </form>
+  );
+}
+function Dashboard({ learning, run, user }) {
+  const [d, D] = useState(null),
+    [tab, ST] = useState("grades"),
+    [q, Q] = useState("");
+  useEffect(() => {
+    run(async () => D(await api("overview/")));
+  }, []);
+  if (!d) return <p>Đang tải dữ liệu…</p>;
+  return (
+    <>
+      {!learning && (
+        <div className="hero">
+          <div>
+            <span className="eyebrow">THE TOEIC LAB / LEARNING MANAGEMENT</span>
+            <h2>Chào mừng, {user.name.split(" ").pop()}!</h2>
+            <p>
+              Mỗi buổi học là một bước tiến.
+              <br />
+              Cùng theo dõi và kết nối hành trình học tập.
+            </p>
+            <span className="herobadge">
+              Quản lý lớp học · Bài tập · Kết quả học tập
+            </span>
+          </div>
+          <div className="heroart">
+            <span>THE</span>
+            <strong>TOEIC</strong>
+            <span>LAB</span>
+            <i>Learn. Practice. Achieve.</i>
+          </div>
+        </div>
+      )}
+      <div className="stats">
+        {[
+          ["Lớp học", d.classes, "▣"],
+          ["Học viên trong lớp", d.students, "♧"],
+          ["Bài tập đã giao", d.assignments, "▤"],
+          ["Bài đã nộp", d.submitted, "✓"],
+        ].map(([label, value, icon]) => (
+          <div className="stat" key={label}>
+            <span>{icon}</span>
+            <div>
+              <small>{label}</small>
+              <strong>{value}</strong>
+            </div>
+          </div>
+        ))}
+      </div>
+      {learning ? (
+        <>
+          <div className="tabs">
+            <button
+              className={tab === "grades" ? "active" : ""}
+              onClick={() => ST("grades")}
+            >
+              Điểm bài kiểm tra
+            </button>
+            <button
+              className={tab === "comments" ? "active" : ""}
+              onClick={() => ST("comments")}
+            >
+              Nhận xét bài tập
+            </button>
+          </div>
+          <input
+            className="search"
+            value={q}
+            onChange={(e) => Q(e.target.value)}
+            placeholder="Tìm kiếm thông tin học tập…"
+          />
+          <div className="card">
+            {tab === "grades" ? (
+              <>
+                <h3>Kết quả học tập</h3>
+                <div className="tablewrap">
+                  <table>
+                    <thead>
+                      <tr>
+                        {[
+                          "Học viên / Lớp",
+                          "Loại kiểm tra",
+                          "Listening",
+                          "Reading",
+                          "Speaking",
+                          "Writing",
+                          "Ngày kiểm tra",
+                          "Ghi chú",
+                          "Overall",
+                        ].map((x) => (
+                          <th key={x}>{x}</th>
+                        ))}
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {d.grades
+                        .filter((g) =>
+                          g.values
+                            .join(" ")
+                            .toLowerCase()
+                            .includes(q.toLowerCase()),
+                        )
+                        .map((g) => (
+                          <tr key={g.id}>
+                            {g.values.map((v, i) => (
+                              <td key={i}>{v}</td>
+                            ))}
+                            <td>
+                              <b>{g.extra.Overall}</b>
+                            </td>
+                          </tr>
+                        ))}
+                    </tbody>
+                  </table>
+                </div>
+                {!d.grades.length && <Empty />}
+              </>
+            ) : (
+              <>
+                <h3>Nhận xét bài tập</h3>
+                {d.comments
+                  .filter((c) =>
+                    Object.values(c)
+                      .join(" ")
+                      .toLowerCase()
+                      .includes(q.toLowerCase()),
+                  )
+                  .map((c, i) => (
+                    <article key={i}>
+                      <b>{c.student}</b>
+                      <small>{c.assignment}</small>
+                      <p>{c.content}</p>
+                    </article>
+                  ))}
+                {!d.comments.length && <Empty />}
+              </>
+            )}
+          </div>
+        </>
+      ) : (
+        <div className="card">
+          <div className="cardhead">
+            <h3>Lịch học sắp tới</h3>
+            <span className="muted">Theo phạm vi được phân công</span>
+          </div>
+          <div className="tablewrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>Ngày học</th>
+                  <th>Lớp học</th>
+                  <th>Ca học</th>
+                  <th>Phòng học</th>
+                </tr>
+              </thead>
+              <tbody>
+                {d.upcoming.map((s, i) => (
+                  <tr key={i}>
+                    <td>{s.date}</td>
+                    <td>
+                      <b>{s.classroom}</b>
+                    </td>
+                    <td>{s.shift}</td>
+                    <td>{s.room}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+          {!d.upcoming.length && <Empty text="Chưa có lịch học sắp tới" />}
+        </div>
+      )}
+    </>
+  );
+}
+function Empty({ text = "Chưa có dữ liệu" }) {
+  return (
+    <div className="empty">
+      <span>▤</span>
+      <h3>{text}</h3>
+      <p>Thử thay đổi từ khóa hoặc bộ lọc.</p>
+    </div>
+  );
+}
+function Records({ kind, user, run, notify, refresh, reload, open }) {
+  const [result, D] = useState(null),
+    [q, Q] = useState(""),
+    [query, SQ] = useState(""),
+    [page, P] = useState(1),
+    [archived, A] = useState(false),
+    [detail, DE] = useState(null),
+    [status, SS] = useState(""),
+    [filters, FL] = useState({});
+  useEffect(() => {
+    D(null);
+    run(async () =>
+      D(
+        await api(
+          `${kind}/?q=${encodeURIComponent(query)}&page=${page}&archived=${archived ? 1 : 0}&status=${encodeURIComponent(status)}&${new URLSearchParams(Object.fromEntries(Object.entries(filters).map(([k, v]) => ["filter_" + k, v])))}`,
+        ),
+      ),
+    );
+  }, [kind, query, page, archived, refresh, status, JSON.stringify(filters)]);
+  async function act(id, action) {
+    if (!confirm("Bạn có chắc chắn muốn thực hiện thao tác này?")) return;
+    await run(async () => {
+      await api(
+        `${kind}/${id}/`,
+        action ? { _action: action } : null,
+        action ? "PATCH" : "DELETE",
+      );
+      notify("Đã cập nhật thành công.");
+      DE(null);
+      reload();
+    });
+  }
+  async function show(id) {
+    await run(async () => DE(await api(`${kind}/${id}/`)));
+  }
+  function exportRows() {
+    const headers = [
+      ...result.columns,
+      ...Object.keys(result.rows[0]?.extra || {}),
+    ];
+    const rows = result.rows.map((r) => [
+      ...r.values,
+      ...Object.values(r.extra),
+    ]);
+    saveCSV(kind + ".csv", [headers, ...rows]);
+    notify("Đã xuất dữ liệu của trang hiện tại.");
+  }
+  if (!result) return <p>Đang tải danh sách…</p>;
+  const rows = result.rows;
+  return (
+    <>
+      <div className="toolbar">
+        <form
+          className="searchform"
+          onSubmit={(e) => {
+            e.preventDefault();
+            SQ(q);
+            P(1);
+          }}
+        >
+          <input
+            value={q}
+            onChange={(e) => Q(e.target.value)}
+            placeholder="⌕  Nhập mã, tên hoặc nội dung cần tìm…"
+          />
+          <button className="primary">Tìm</button>
+        </form>
+        <div className="actions">
+          {["accounts", "grades", "allocations"].includes(kind) &&
+            result.can_write && (
+              <button onClick={() => open({ type: "bulk", kind })}>
+                ⇧ Nhập hàng loạt
+              </button>
+            )}
+          <button onClick={exportRows}>⇩ Xuất CSV</button>
+          {["courses", "shifts", "classes", "schedules"].includes(kind) && (
+            <button
+              className={archived ? "primary" : ""}
+              onClick={() => {
+                A(!archived);
+                P(1);
+              }}
+            >
+              ▱ {archived ? "Đang lưu trữ" : "Lưu trữ"}
+            </button>
+          )}
+          {result.can_write && (
+            <button
+              className="primary"
+              onClick={() => open({ type: "edit", kind })}
+            >
+              ＋ Thêm mới
+            </button>
+          )}
+        </div>
+      </div>
+      <div className="filters">
+        {result.filters?.map((f) => (
+          <label key={f.name}>
+            {f.label}
+            <select
+              value={filters[f.name] || ""}
+              onChange={(e) => {
+                FL({ ...filters, [f.name]: e.target.value });
+                P(1);
+              }}
+            >
+              <option value="">Tất cả</option>
+              {f.choices.map((c) => (
+                <option value={c.value} key={c.value}>
+                  {c.label}
+                </option>
+              ))}
+            </select>
+          </label>
+        ))}
+        <label>
+          Trạng thái
+          <select
+            value={status}
+            onChange={(e) => {
+              SS(e.target.value);
+              P(1);
+            }}
+          >
+            <option value="">Tất cả trạng thái</option>
+            {(result.status_options || []).map((x) => (
+              <option key={x}>{x}</option>
+            ))}
+          </select>
+        </label>
+        <span className="muted">
+          {result.total} bản ghi trong phạm vi quyền truy cập
+        </span>
+        <button
+          className="danger"
+          onClick={() => {
+            Q("");
+            SQ("");
+            SS("");
+            FL({});
+            P(1);
+          }}
+        >
+          × Xóa bộ lọc
+        </button>
+      </div>
+      <div className="card list">
+        <div className="tablewrap">
+          <table>
+            <thead>
+              <tr>
+                <th>STT</th>
+                {result.columns.map((x, i) => (
+                  <th key={i}>{x}</th>
+                ))}
+                {Object.keys(result.rows[0]?.extra || {}).map((x) => (
+                  <th key={x}>{x}</th>
+                ))}
+                <th>Thao tác</th>
+              </tr>
+            </thead>
+            <tbody>
+              {rows.map((r, i) => (
+                <tr key={r.id}>
+                  <td>{(page - 1) * 10 + i + 1}</td>
+                  {r.values.map((v, j) => (
+                    <td key={j} className={j === 0 ? "emphasis" : ""}>
+                      {["Active", "Inactive"].includes(v) ? (
+                        <span
+                          className={
+                            "badge " + (v === "Active" ? "green" : "red")
+                          }
+                        >
+                          {v}
+                        </span>
+                      ) : v.length > 100 ? (
+                        v.slice(0, 100) + "…"
+                      ) : (
+                        v
+                      )}
+                    </td>
+                  ))}
+                  {Object.entries(r.extra).map(([k, v]) => (
+                    <td key={k}>
+                      <span
+                        className={
+                          k.includes("Trạng thái") || k === "Kết quả"
+                            ? "badge"
+                            : ""
+                        }
+                      >
+                        {v}
+                      </span>
+                    </td>
+                  ))}
+                  <td>
+                    <div className="rowactions">
+                      <button onClick={() => show(r.id)}>◎ Chi tiết</button>
+                      {result.can_write && (
+                        <>
+                          {kind === "assignments" && (
+                            <button
+                              onClick={() =>
+                                open({ type: "allocate", id: r.id })
+                              }
+                            >
+                              ↗ Giao nhiều lớp
+                            </button>
+                          )}
+                          <button
+                            onClick={() =>
+                              open({ type: "edit", kind, id: r.id })
+                            }
+                          >
+                            ✎ Sửa
+                          </button>
+                          {[
+                            "courses",
+                            "shifts",
+                            "classes",
+                            "schedules",
+                          ].includes(kind) && (
+                            <button
+                              onClick={() =>
+                                act(r.id, archived ? "restore" : "archive")
+                              }
+                            >
+                              {archived ? "Khôi phục" : "Lưu trữ"}
+                            </button>
+                          )}
+                          {kind === "accounts" ? (
+                            <button onClick={() => act(r.id, "toggle")}>
+                              Active / Inactive
+                            </button>
+                          ) : (
+                            <button
+                              className="danger"
+                              onClick={() =>
+                                act(
+                                  r.id,
+                                  kind === "enrollments"
+                                    ? r.extra["Trạng thái"] === "Đã rời lớp"
+                                      ? "rejoin"
+                                      : "leave"
+                                    : null,
+                                )
+                              }
+                            >
+                              {kind === "submissions"
+                                ? "Hủy nộp"
+                                : kind === "enrollments"
+                                  ? r.extra["Trạng thái"] === "Đã rời lớp"
+                                    ? "Tham gia lại"
+                                    : "Rời lớp"
+                                  : "Xóa"}
+                            </button>
+                          )}
+                        </>
+                      )}
+                      {kind === "retakes" &&
+                        ["QLCN", "QLLH"].includes(user.role) && (
+                          <button
+                            onClick={() =>
+                              open({ type: "review", kind, id: r.id })
+                            }
+                          >
+                            Xét duyệt
+                          </button>
+                        )}
+                    </div>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+        {!rows.length && <Empty />}
+        <div className="pagination">
+          <span>
+            Trang {page} · Tổng {result.total} bản ghi
+          </span>
+          <div>
+            <button disabled={page <= 1} onClick={() => P(page - 1)}>
+              ‹
+            </button>
+            <button className="primary">{page}</button>
+            <button
+              disabled={page * 10 >= result.total}
+              onClick={() => P(page + 1)}
+            >
+              ›
+            </button>
+          </div>
+        </div>
+      </div>
+      {detail && (
+        <div className="overlay">
+          <div className="modal">
+            <button className="close" onClick={() => DE(null)}>
+              ×
+            </button>
+            <h2>Thông tin chi tiết</h2>
+            <p className="muted">ID dữ liệu: {detail.id} (dùng khi nhập CSV)</p>
+            <dl>
+              {result.columns.map((c, i) => (
+                <React.Fragment key={c}>
+                  <dt>{c}</dt>
+                  <dd>{detail.values[i]}</dd>
+                </React.Fragment>
+              ))}
+              {Object.entries(detail.extra).map(([k, v]) => (
+                <React.Fragment key={k}>
+                  <dt>{k}</dt>
+                  <dd>{v}</dd>
+                </React.Fragment>
+              ))}
+            </dl>
+            {detail.members && (
+              <>
+                <h3>Danh sách học viên</h3>
+                {detail.members.map((m) => (
+                  <p key={m.id}>
+                    {m.student} · <span className="badge">{m.status}</span>
+                  </p>
+                ))}
+                <h3>Các buổi học</h3>
+                {detail.sessions.map((s) => (
+                  <p key={s.id}>
+                    Buổi {s.number} · {s.date} · {s.shift} · {s.room}{" "}
+                    {s.cancelled ? "· Đã hủy" : ""}
+                  </p>
+                ))}
+              </>
+            )}
+            {detail.comments?.map((c) => (
+              <article key={c.id}>
+                <b>{c.author}</b>
+                <p>{c.content}</p>
+              </article>
+            ))}
+            {detail.files && (
+              <>
+                <h3>Tài liệu đính kèm</h3>
+                {detail.files.map((f) => (
+                  <p key={f.id}>
+                    <a href={`/api/files/${f.id}/`}>{f.name}</a>
+                  </p>
+                ))}
+                {result.can_write && (
+                  <label>
+                    Thêm tệp (PDF, DOCX, PNG, JPEG ≤ 20 MB)
+                    <input
+                      type="file"
+                      accept=".pdf,.docx,.png,.jpg,.jpeg"
+                      onChange={(e) => {
+                        const file = e.target.files[0];
+                        if (file)
+                          run(async () => {
+                            const form = new FormData();
+                            form.append("file", file);
+                            await api(`${kind}/${detail.id}/upload/`, form);
+                            await show(detail.id);
+                            notify("Đã tải tệp lên.");
+                          });
+                      }}
+                    />
+                  </label>
+                )}
+              </>
+            )}
+          </div>
+        </div>
+      )}
+    </>
+  );
+}
+function Editor({ spec, run, notify, done }) {
+  const [fields, F] = useState(null),
+    [busy, B] = useState(false),
+    [error, E] = useState(""),
+    [secret, SEC] = useState(null);
+  useEffect(() => {
+    if (spec.type === "edit")
+      api(`${spec.kind}/${spec.id ? spec.id + "/" : ""}?form=1`)
+        .then((d) => F(d.fields))
+        .catch((e) => E(e.message));
+  }, []);
+  async function submit(e) {
+    e.preventDefault();
+    B(true);
+    E("");
+    try {
+      const form = new FormData(e.target);
+      let payload = Object.fromEntries(form);
+      fields
+        ?.filter((f) => f.type === "multi")
+        .forEach((f) => (payload[f.name] = form.getAll(f.name)));
+      if (spec.type === "review") {
+        await api(`retakes/${spec.id}/review/`, payload);
+      } else if (spec.type === "bulk") {
+        const rows = parseCSV(payload.csv);
+        const r = await api(`bulk/${spec.kind}/`, { rows });
+        if (spec.kind === "accounts") {
+          SEC(r.created);
+          B(false);
+          return;
+        }
+      } else {
+        if (!confirm("Xác nhận lưu thông tin?")) {
+          B(false);
+          return;
+        }
+        const d = await api(
+          `${spec.kind}/${spec.id ? spec.id + "/" : ""}`,
+          payload,
+          spec.id ? "PATCH" : "POST",
+        );
+        if (d.temporary_password) {
+          SEC([
+            { code: "ID " + d.id, temporary_password: d.temporary_password },
+          ]);
+          B(false);
+          return;
+        }
+      }
+      notify("Đã lưu dữ liệu thành công.");
+      done();
+    } catch (e) {
+      E(e.message);
+    }
+    B(false);
+  }
+  if (secret)
+    return (
+      <>
+        <h2>Tài khoản đã được tạo</h2>
+        <p>
+          Lưu mật khẩu tạm ngay. Thông tin này chỉ hiển thị trong lần tạo này.
+        </p>
+        {secret.map((s, i) => (
+          <p key={i}>
+            <b>{s.code}</b>　<code>{s.temporary_password}</code>
+          </p>
+        ))}
+        <button
+          onClick={() =>
+            saveCSV("tai-khoan-moi.csv", [
+              ["Mã", "Mật khẩu tạm"],
+              ...secret.map((s) => [s.code, s.temporary_password]),
+            ])
+          }
+        >
+          Tải CSV mật khẩu tạm
+        </button>
+        <button className="primary" onClick={done}>
+          Đã lưu, đóng
+        </button>
+      </>
+    );
+  return (
+    <form onSubmit={submit}>
+      <h2>
+        {spec.type === "bulk"
+          ? "Nhập dữ liệu hàng loạt"
+          : spec.type === "review"
+            ? "Xét duyệt yêu cầu học lại"
+            : spec.id
+              ? "Chỉnh sửa thông tin"
+              : "Thêm mới"}
+      </h2>
+      {error && (
+        <div role="alert" className="alert">
+          {error}
+        </div>
+      )}
+      {spec.type === "bulk" ? (
+        <>
+          <p className="muted">
+            Nhập CSV tối đa 200 dòng. Lỗi ở một dòng sẽ hủy toàn bộ lần nhập.
+            Các khóa ngoại dùng ID trong CSDL.
+          </p>
+          <p>
+            Tiêu đề cột:{" "}
+            <code>
+              {spec.kind === "accounts"
+                ? "full_name,gender,phone,email,address,role"
+                : spec.kind === "allocations"
+                  ? "assignment,classroom,session,deadline"
+                  : "enrollment,exam_type,listening,reading,speaking,writing,exam_date,note"}
+            </code>
+          </p>
+          <label>
+            Chọn tệp CSV UTF-8
+            <input
+              type="file"
+              accept=".csv"
+              onChange={(e) => {
+                const file = e.target.files[0];
+                if (file)
+                  file
+                    .text()
+                    .then(
+                      (s) => (document.querySelector("[name=csv]").value = s),
+                    );
+              }}
+            />
+          </label>
+          <textarea
+            name="csv"
+            rows={10}
+            required
+            placeholder="Dán nội dung CSV tại đây"
+          />
+        </>
+      ) : spec.type === "review" ? (
+        <>
+          <p className="muted">
+            Hệ thống ghi nhận điểm và tỷ lệ nộp bài tại thời điểm xét duyệt.
+            Người quản lý quyết định và ghi rõ lý do. Không sử dụng tiêu chí
+            nghỉ học khi chưa có dữ liệu điểm danh.
+          </p>
+          <label>
+            Kết quả
+            <select name="status">
+              <option value="approved">Đồng ý</option>
+              <option value="rejected">Từ chối</option>
+            </select>
+          </label>
+          <label>
+            Lý do
+            <textarea name="note" required maxLength={500} />
+          </label>
+        </>
+      ) : fields ? (
+        <div className="formgrid">
+          {fields.map((f) => (
+            <label
+              key={f.name}
+              className={
+                f.type === "textarea" || f.type === "multi" ? "wide" : ""
+              }
+            >
+              {f.label}
+              {f.required && <em> *</em>}
+              {f.type === "select" || f.type === "multi" ? (
+                <select
+                  name={f.name}
+                  required={f.required}
+                  multiple={f.type === "multi"}
+                  defaultValue={f.value ?? (f.type === "multi" ? [] : "")}
+                >
+                  {f.choices.map((c) => (
+                    <option value={c.value} key={c.value}>
+                      {c.label}
+                    </option>
+                  ))}
+                </select>
+              ) : f.type === "textarea" ? (
+                <textarea
+                  name={f.name}
+                  required={f.required}
+                  maxLength={f.maxLength}
+                  defaultValue={f.value || ""}
+                />
+              ) : (
+                <input
+                  name={f.name}
+                  type={f.type}
+                  required={f.required}
+                  maxLength={f.maxLength}
+                  step={f.type === "number" ? "0.5" : undefined}
+                  min={f.type === "number" ? 0 : undefined}
+                  max={f.type === "number" ? 10 : undefined}
+                  defaultValue={
+                    f.type === "datetime-local"
+                      ? f.value?.slice(0, 16)
+                      : (f.value ?? "")
+                  }
+                />
+              )}
+            </label>
+          ))}
+        </div>
+      ) : (
+        <p>Đang tải biểu mẫu…</p>
+      )}
+      <div className="formfooter">
+        <button type="button" onClick={done}>
+          Đóng
+        </button>
+        <button
+          className="primary"
+          disabled={busy || (spec.type === "edit" && !fields)}
+        >
+          {busy ? "Đang lưu…" : "Xác nhận"}
+        </button>
+      </div>
+    </form>
+  );
+}
+function parseCSV(text) {
+  const rows = [];
+  let row = [],
+    cell = "",
+    quoted = false;
+  const s = text.replace(/^\uFEFF/, "");
+  for (let i = 0; i <= s.length; i++) {
+    let c = s[i];
+    if (c === '"') {
+      if (quoted && s[i + 1] === '"') {
+        cell += '"';
+        i++;
+      } else quoted = !quoted;
+    } else if ((c === "," || c === "\n" || c === undefined) && !quoted) {
+      row.push(cell.replace(/\r$/, ""));
+      cell = "";
+      if (c !== ",") {
+        if (row.some(Boolean)) rows.push(row);
+        row = [];
+      }
+    } else cell += c;
+  }
+  if (quoted) throw Error("CSV có dấu ngoặc kép chưa đóng.");
+  const headers = rows.shift()?.map((x) => x.trim());
+  if (!headers) throw Error("CSV trống.");
+  return rows.map((r) =>
+    Object.fromEntries(headers.map((h, i) => [h, r[i] || ""])),
+  );
+}
+function saveCSV(name, rows) {
+  const quote = (x) => '"' + String(x ?? "").replaceAll('"', '""') + '"';
+  const safe = (x) => (/^[=+@\-\t\r]/.test(String(x)) ? "'" + x : x);
+  const blob = new Blob(
+    [
+      "\uFEFF" +
+        rows.map((r) => r.map((x) => quote(safe(x))).join(",")).join("\r\n"),
+    ],
+    { type: "text/csv;charset=utf-8" },
+  );
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = name;
+  a.click();
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
+}
+createRoot(document.getElementById("root")).render(<App />);
+
+function Progress({ run }) {
+  const [rows, R] = useState([]),
+    [q, Q] = useState(""),
+    [status, S] = useState("");
+  useEffect(() => {
+    run(async () => R((await api("progress/")).rows));
+  }, []);
+  return (
+    <>
+      <div className="filters">
+        <input
+          value={q}
+          onChange={(e) => Q(e.target.value)}
+          placeholder="Tìm học viên, lớp, bài tập…"
+        />
+        <select value={status} onChange={(e) => S(e.target.value)}>
+          <option value="">Tất cả trạng thái</option>
+          {["Chưa nộp", "Đã nộp", "Quá hạn", "Nộp muộn", "Không hợp lệ"].map(
+            (s) => (
+              <option key={s}>{s}</option>
+            ),
+          )}
+        </select>
+      </div>
+      <div className="card">
+        <h3>Trạng thái nộp bài của học viên</h3>
+        <div className="tablewrap">
+          <table>
+            <thead>
+              <tr>
+                {[
+                  "Học viên",
+                  "Lớp học",
+                  "Bài tập",
+                  "Hạn nộp",
+                  "Trạng thái",
+                ].map((h) => (
+                  <th key={h}>{h}</th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {rows
+                .filter(
+                  (r) =>
+                    (!status || status === r.status) &&
+                    Object.values(r)
+                      .join(" ")
+                      .toLowerCase()
+                      .includes(q.toLowerCase()),
+                )
+                .map((r, i) => (
+                  <tr key={i}>
+                    <td>{r.student}</td>
+                    <td>{r.classroom}</td>
+                    <td>{r.assignment}</td>
+                    <td>{r.deadline}</td>
+                    <td>
+                      <span
+                        className={
+                          "badge " + (r.status === "Đã nộp" ? "green" : "")
+                        }
+                      >
+                        {r.status}
+                      </span>
+                    </td>
+                  </tr>
+                ))}
+            </tbody>
+          </table>
+        </div>
+        {!rows.length && <Empty />}
+      </div>
+    </>
+  );
+}
+
+function AllocationEditor({ assignment, done, notify }) {
+  const [fields, F] = useState(null),
+    [selected, S] = useState([]),
+    [values, V] = useState({}),
+    [error, E] = useState(""),
+    [busy, B] = useState(false);
+  useEffect(() => {
+    api("allocations/?form=1")
+      .then((d) => F(d.fields))
+      .catch((e) => E(e.message));
+  }, []);
+  const classes =
+    fields
+      ?.find((f) => f.name === "classroom")
+      ?.choices.filter((c) => c.value) || [];
+  const sessions = fields?.find((f) => f.name === "session")?.choices || [];
+  function update(id, key, value) {
+    V({ ...values, [id]: { ...values[id], [key]: value } });
+  }
+  async function submit(e) {
+    e.preventDefault();
+    B(true);
+    E("");
+    try {
+      if (!selected.length) throw Error("Chọn ít nhất một lớp học.");
+      const rows = selected.map((id) => ({
+        assignment,
+        classroom: id,
+        session: values[id]?.session,
+        deadline: values[id]?.deadline,
+      }));
+      await api("bulk/allocations/", { rows });
+      notify("Đã giao bài tập cho " + rows.length + " lớp.");
+      done();
+    } catch (e) {
+      E(e.message);
+    }
+    B(false);
+  }
+  return (
+    <form onSubmit={submit}>
+      <h2>Tạo và giao bài tập cho nhiều lớp</h2>
+      <p className="muted">
+        Nội dung bài tập dùng chung; mỗi lớp có buổi học và hạn nộp riêng. Hệ
+        thống lưu toàn bộ trong một giao dịch.
+      </p>
+      {error && (
+        <div className="alert" role="alert">
+          {error}
+        </div>
+      )}
+      {!fields ? (
+        <p>Đang tải các lớp được phân công…</p>
+      ) : (
+        classes.map((c) => (
+          <article key={c.value}>
+            <label className="checkrow">
+              <input
+                type="checkbox"
+                checked={selected.includes(c.value)}
+                onChange={(e) =>
+                  S(
+                    e.target.checked
+                      ? [...selected, c.value]
+                      : selected.filter((x) => x !== c.value),
+                  )
+                }
+              />
+              {c.label}
+            </label>
+            {selected.includes(c.value) && (
+              <div className="formgrid">
+                <label>
+                  Buổi học
+                  <select
+                    required
+                    value={values[c.value]?.session || ""}
+                    onChange={(e) => update(c.value, "session", e.target.value)}
+                  >
+                    <option value="">Chọn buổi đã/đang diễn ra</option>
+                    {sessions
+                      .filter((s) => String(s.classroom_id) === c.value)
+                      .map((s) => (
+                        <option key={s.value} value={s.value}>
+                          {s.label}
+                        </option>
+                      ))}
+                  </select>
+                </label>
+                <label>
+                  Hạn nộp
+                  <input
+                    type="datetime-local"
+                    required
+                    value={values[c.value]?.deadline || ""}
+                    onChange={(e) =>
+                      update(c.value, "deadline", e.target.value)
+                    }
+                  />
+                </label>
+              </div>
+            )}
+          </article>
+        ))
+      )}
+      {fields && !classes.length && (
+        <Empty text="Bạn chưa được phân công lớp học" />
+      )}
+      <div className="formfooter">
+        <button type="button" onClick={done}>
+          Đóng
+        </button>
+        <button className="primary" disabled={busy}>
+          {busy ? "Đang giao bài…" : "Xác nhận giao bài"}
+        </button>
+      </div>
+    </form>
+  );
+}
