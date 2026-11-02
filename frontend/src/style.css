@@ -1753,3 +1753,120 @@ nav button {
   .account-info-actions button { flex: 1 1 auto; }
   .account-info-actions .primary { margin-left: 0; }
 }
+
+
+/* Account management screen — scoped so other record tables stay unchanged */
+.account-management-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin: 0 0 14px;
+}
+.account-management-search,
+.account-management-search form,
+.account-management-buttons {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.account-management-search { flex: 1 1 460px; min-width: 0; }
+.account-management-search form { flex: 1; min-width: 0; margin: 0; }
+.account-management-search input {
+  width: 100%;
+  min-width: 140px;
+  height: 39px;
+  border: 1px solid #dce4f1;
+  border-radius: 5px;
+  font-size: 12px;
+  background: #fff;
+}
+.account-management-toolbar button {
+  min-height: 39px;
+  border-radius: 5px;
+  font-size: 12px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+.account-management-search > button,
+.account-management-buttons > button:not(.primary) {
+  color: #345ce9;
+  border: 1px solid #b9c9fa;
+  background: white;
+}
+.account-management-toolbar .primary {
+  background: #3155e9;
+  color: white;
+  border-color: #3155e9;
+}
+.account-management-filters { display: none; }
+.account-management-filters.is-open { display: flex; }
+.account-management-table {
+  background: #fff;
+  border: 1px solid #edf0f7;
+  border-radius: 8px;
+  overflow: hidden;
+}
+.account-management-table .tablewrap { overflow-x: auto; }
+.account-management-table table {
+  width: 100%;
+  min-width: 1040px;
+  border-collapse: collapse;
+  font-size: 12px;
+}
+.account-management-table thead { background: #f5f7fb; }
+.account-management-table th {
+  color: #253765;
+  font-size: 11px;
+  font-weight: 700;
+  padding: 14px 12px;
+  text-align: left;
+  white-space: normal;
+}
+.account-management-table td {
+  color: #30446d;
+  padding: 13px 12px;
+  line-height: 1.45;
+  vertical-align: middle;
+  border-bottom: 1px solid #edf0f5;
+}
+.account-management-table .account-management-row { cursor: pointer; }
+.account-management-table .account-management-row:hover { background: #f6f9ff; }
+.account-management-table .account-status-select {
+  min-width: 88px;
+  width: 100%;
+  max-width: 115px;
+  padding: 6px 8px;
+  border-radius: 5px;
+  font-size: 11px;
+  font-weight: 600;
+  cursor: pointer;
+}
+.account-management-table .account-status-select.is-active {
+  color: #24926b;
+  border-color: #bde5d4;
+  background: #f8fffb;
+}
+.account-management-table .account-status-select.is-inactive {
+  color: #d65b5b;
+  border-color: #f4c3c3;
+  background: #fffafa;
+}
+.account-management-table .account-status-select:disabled {
+  opacity: 1;
+  cursor: default;
+}
+.account-management-table .pagination {
+  padding: 12px 16px;
+}
+@media (max-width: 950px) {
+  .account-management-toolbar { align-items: stretch; }
+  .account-management-search { flex-basis: 100%; }
+  .account-management-buttons { flex-wrap: wrap; }
+}
+@media (max-width: 580px) {
+  .account-management-search { flex-wrap: wrap; }
+  .account-management-search form { flex-basis: 100%; }
+  .account-management-search input { min-width: 0; }
+}
