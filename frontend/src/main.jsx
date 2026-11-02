@@ -5,6 +5,7 @@ import SidebarIcon from "./SidebarIcon";
 import "./sidebar-icons.css";
 import { api } from "./api";
 import Homework from "./Homework";
+import SubmissionProgress from "./SubmissionProgress";
 const sections = [
   ["⌂", "home", "Trang chủ"],
   ["♙", "accounts", "Quản lý tài khoản"],
@@ -269,6 +270,12 @@ const roleMenus = [
         icon: "▦",
         roles: ["QLCN", "QLLH", "GV", "HV"],
       },
+      {
+        key: "progress",
+        title: "Trạng thái nộp bài",
+        icon: "✓",
+        roles: ["QLCN", "QLLH", "GV"],
+      },
     ],
   },
   {
@@ -488,7 +495,7 @@ function toggleMenu(title) {
           {section === "assignments" ? (
             <Homework user={user} notify={notify} refresh={refresh} open={M} />
           ) : section === "progress" ? (
-            <Progress run={run} />
+            <SubmissionProgress refresh={refresh} notify={notify} />
           ) : ["home", "learning"].includes(section) ? (
             <Dashboard
               learning={section === "learning"}
@@ -1750,83 +1757,6 @@ function saveCSV(name, rows) {
   setTimeout(() => URL.revokeObjectURL(url), 1000);
 }
 createRoot(document.getElementById("root")).render(<App />);
-
-function Progress({ run }) {
-  const [rows, R] = useState([]),
-    [q, Q] = useState(""),
-    [status, S] = useState("");
-  useEffect(() => {
-    run(async () => R((await api("progress/")).rows));
-  }, []);
-  return (
-    <>
-      <div className="filters">
-        <input
-          value={q}
-          onChange={(e) => Q(e.target.value)}
-          placeholder="Tìm học viên, lớp, bài tập…"
-        />
-        <select value={status} onChange={(e) => S(e.target.value)}>
-          <option value="">Tất cả trạng thái</option>
-          {["Chưa nộp", "Đã nộp", "Quá hạn", "Nộp muộn", "Không hợp lệ"].map(
-            (s) => (
-              <option key={s}>{s}</option>
-            ),
-          )}
-        </select>
-      </div>
-      <div className="card">
-        <h3>Trạng thái nộp bài của học viên</h3>
-        <div className="tablewrap">
-          <table>
-            <thead>
-              <tr>
-                {[
-                  "Học viên",
-                  "Lớp học",
-                  "Bài tập",
-                  "Hạn nộp",
-                  "Trạng thái",
-                ].map((h) => (
-                  <th key={h}>{h}</th>
-                ))}
-              </tr>
-            </thead>
-            <tbody>
-              {rows
-                .filter(
-                  (r) =>
-                    (!status || status === r.status) &&
-                    Object.values(r)
-                      .join(" ")
-                      .toLowerCase()
-                      .includes(q.toLowerCase()),
-                )
-                .map((r, i) => (
-                  <tr key={i}>
-                    <td>{r.student}</td>
-                    <td>{r.classroom}</td>
-                    <td>{r.assignment}</td>
-                    <td>{r.deadline}</td>
-                    <td>
-                      <span
-                        className={
-                          "badge " + (r.status === "Đã nộp" ? "green" : "")
-                        }
-                      >
-                        {r.status}
-                      </span>
-                    </td>
-                  </tr>
-                ))}
-            </tbody>
-          </table>
-        </div>
-        {!rows.length && <Empty />}
-      </div>
-    </>
-  );
-}
 
 function AllocationEditor({ assignment, done, notify }) {
   const [fields, F] = useState(null),
