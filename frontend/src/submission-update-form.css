@@ -1,0 +1,39 @@
+.submission-update-overlay { z-index: 130; }
+.submission-update-form { width: min(740px, 94vw); padding: 26px 30px; color: #34415d; }
+.submission-update-form h2 { font-size: 18px; line-height: 1.5; margin: 0 30px 24px 0; color: #26355a; }
+.submission-update-row { display: grid; grid-template-columns: 180px minmax(0, 1fr); align-items: start; gap: 12px; margin-bottom: 10px; font-size: 12px; }
+.submission-update-row > span, .submission-update-row > label { font-weight: 600; line-height: 1.7; margin: 0; padding-top: 7px; }
+.submission-update-row > label { display: block; }
+.submission-update-row > label small { display: inline; color: #95a0b5; font-size: 10px; font-weight: 400; }
+.submission-update-row .submission-update-readonly { background: #f3f4f8; border: 1px solid #eceef4; border-radius: 4px; padding: 7px 12px; color: #65718c; font-weight: 600; overflow-wrap: anywhere; }
+.submission-update-row .progress-status { margin-top: 2px; }
+.submission-update-row.reason { margin-top: 16px; margin-bottom: 20px; }
+.submission-update-row.reason > div { position: relative; }
+.submission-update-row textarea { width: 100%; min-height: 126px; padding: 12px 12px 28px; font-size: 12px; line-height: 1.8; }
+.submission-update-row textarea::placeholder { color: #9aa6bd; }
+.submission-update-counter { position: absolute; right: 10px; bottom: 12px; color: #9ba7bd; font-size: 10px; }
+.submission-update-dropzone { border: 1px dashed #dce1ef; border-radius: 5px; padding: 16px 12px; background: #fcfcfe; }
+.submission-update-dropzone.dragging { background: #f0f4ff; border-color: #718df0; }
+.submission-update-dropzone > div { display: flex; justify-content: center; align-items: center; gap: 10px; flex-wrap: wrap; font-size: 11px; font-weight: 600; }
+.submission-update-dropzone svg { width: 23px; height: 23px; flex-shrink: 0; }
+.submission-update-dropzone button { padding: 6px 11px; font-size: 11px; font-weight: 600; border-color: #b7c5f2; color: #5875dc; box-shadow: inset 0 0 0 1px #eef1fb; }
+.submission-update-dropzone p { color: #97a2b9; font-size: 10px; text-align: center; line-height: 1.7; margin: 10px 0 0; }
+.submission-update-file-input { display: none; }
+.submission-update-selected { display: flex; align-items: center; gap: 10px; font-size: 11px; background: #f1f5ff; border-radius: 4px; margin-top: 7px; padding: 6px 9px; }
+.submission-update-selected > span { flex: 1; min-width: 0; overflow-wrap: anywhere; }
+.submission-update-selected small { color: #8996ae; font-size: 10px; }
+.submission-update-selected button { padding: 0 4px; border: 0; background: transparent; color: #ce6870; font-size: 18px; }
+.submission-update-error { display: block; color: #bc4259; font-size: 11px; margin-top: 6px; }
+.submission-update-actions { display: flex; justify-content: flex-end; gap: 14px; margin: 23px 0 18px; }
+.submission-update-actions button { min-width: 110px; font-size: 12px; padding: 11px 20px; font-weight: 600; }
+.submission-update-actions .primary { background: #3d5aed; border-color: #3d5aed; }
+.submission-update-note { color: #94a0b8; font-size: 10px; line-height: 1.8; margin: 0; }
+.submission-update-existing { padding-left: 18px; margin: 4px 0; font-size: 11px; line-height: 1.8; overflow-wrap: anywhere; }
+.submission-update-form .alert { margin: 0 0 18px; }
+.submission-progress tr.progress-editing-row { background: #edf0ff; }
+.submission-progress .progress-evidence-link { display: block; font-size: 10px; margin-top: 5px; }
+@media (max-width: 650px) {
+  .submission-update-form { padding: 22px 18px; }
+  .submission-update-row { grid-template-columns: minmax(0, 1fr); gap: 5px; margin-bottom: 14px; }
+  .submission-update-actions button { min-width: 0; flex: 1; }
+}

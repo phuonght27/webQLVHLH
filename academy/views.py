@@ -919,33 +919,45 @@ def progress(r):
     blocked = guard(r)
     if blocked is not None:
         return blocked
+    from .submission_updates import may_update
+
     output = []
     members = list(scoped(Enrollment, r.user).filter(
         deleted_at=None, left_at=None).select_related("student", "classroom"))
     classes = scoped(Classroom, r.user).filter(deleted_at=None).order_by("code")
     allocations = list(Allocation.objects.filter(
         classroom__in=classes, deleted_at=None, assignment__deleted_at=None
-    ).select_related("assignment", "session", "classroom"))
+    ).select_related("assignment", "session", "classroom__course"))
     by_class = {}
     for allocation in allocations:
         by_class.setdefault(allocation.classroom_id, []).append(allocation)
     submissions = list(Submission.objects.filter(
         enrollment__in=members, deleted_at=None).select_related("allocation"))
     by_member_allocation = {(sub.enrollment_id, sub.allocation_id): sub for sub in submissions}
-    latest_exception = {}
+    latest_change = {}
     for exception in SubmissionException.objects.filter(
-        submission__in=submissions, deleted_at=None).order_by("pk"):
-        latest_exception[exception.submission_id] = exception.reason
+        submission__in=submissions, deleted_at=None).select_related("submission").order_by("pk"):
+        key = (exception.submission.enrollment_id, exception.submission.allocation_id)
+        latest_change[key] = (exception.created_at, exception.reason, "")
+    for update in SubmissionUpdate.objects.filter(
+        enrollment__in=members, allocation__in=allocations).order_by("pk"):
+        key = (update.enrollment_id, update.allocation_id)
+        previous = latest_change.get(key)
+        if not previous or update.created_at > previous[0]:
+            latest_change[key] = (update.created_at, update.reason,
+                f"/api/progress/updates/{update.pk}/evidence/" if update.evidence else "")
     for member in members:
         for allocation in by_class.get(member.classroom_id, []):
             sub = by_member_allocation.get((member.pk, allocation.pk))
             status = sub.status if sub else (
                 "Quá hạn" if timezone.now() > allocation.deadline else "Chưa nộp")
+            change = latest_change.get((member.pk, allocation.pk))
             output.append({
                 "student": str(member.student),
                 "student_name": member.student.full_name,
                 "student_code": member.student.username,
                 "student_id": member.student_id,
+                "enrollment_id": member.pk,
                 "classroom": str(member.classroom),
                 "classroom_id": member.classroom_id,
                 "assignment": allocation.assignment.title,
@@ -956,7 +968,9 @@ def progress(r):
                 "status": status,
                 "submission_id": sub.pk if sub else None,
                 "late_reason": "",
-                "change_reason": latest_exception.get(sub.pk, "") if sub else "",
+                "change_reason": change[1] if change else "",
+                "evidence_url": change[2] if change else "",
+                "can_update_submission": may_update(r.user, allocation, member),
                 "can_update_exception": bool(can_write("exceptions", r.user) and sub and sub.submitted_at),
             })
     return JsonResponse({

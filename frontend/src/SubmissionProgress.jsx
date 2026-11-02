@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { api } from "./api";
 import "./submission-progress.css";
+import SubmissionUpdateForm from "./SubmissionUpdateForm";
 
 const statusLabels = { "Đã nộp": "Đúng hạn", "Nộp muộn": "Nộp muộn", "Quá hạn": "Thiếu bài", "Không hợp lệ": "Không hợp lệ", "Chưa nộp": "Chưa nộp" };
 const statusTones = { "Đã nộp": "green", "Nộp muộn": "orange", "Quá hạn": "red", "Không hợp lệ": "purple", "Chưa nộp": "blue" };
@@ -72,11 +73,11 @@ export default function SubmissionProgress({ refresh, notify }) {
       </div></div>
       {filterOpen && <div id="progress-status-filter" className="progress-filter-panel"><label>Trạng thái nộp bài<select aria-label="Lọc trạng thái nộp bài" value={status} onChange={e => setStatus(e.target.value)}><option value="">Tất cả trạng thái</option>{Object.entries(statusLabels).map(([raw, label]) => <option key={raw} value={raw}>{label}</option>)}</select></label><button onClick={() => { setStatus(""); setQuery(""); }}>Xóa bộ lọc</button></div>}
       <div className="progress-table-wrap"><table className="progress-table"><thead><tr>{["STT", "Mã học viên", "Họ tên", "Trạng thái nộp bài", "Lý do nộp muộn", "Lý do thay đổi trạng thái", "Cập nhật ngoại lệ"].map(label => <th key={label}>{label}</th>)}</tr></thead>
-        <tbody>{visible.map((row, index) => <tr key={`${row.allocation_id}-${row.student_id}`}>
+        <tbody>{visible.map((row, index) => <tr key={`${row.allocation_id}-${row.student_id}`} className={exception?.allocation_id === row.allocation_id && exception?.student_id === row.student_id ? "progress-editing-row" : ""}>
           <td>{first + index + 1}</td><td><b>{row.student_code}</b></td><td>{row.student_name}</td>
           <td><span className={`progress-status ${statusTones[row.status] || "blue"}`}>{statusLabels[row.status] || row.status}</span></td>
-          <td>{row.late_reason || "—"}</td><td>{row.change_reason || "—"}</td>
-          <td>{row.can_update_exception && ["Nộp muộn", "Không hợp lệ"].includes(row.status) ? <button className="progress-exception" onClick={() => setException(row)}>Cập nhật ngoại lệ</button> : "—"}</td>
+          <td>{row.late_reason || "—"}</td><td>{row.change_reason || "—"}{row.evidence_url && <a className="progress-evidence-link" href={row.evidence_url}>Minh chứng</a>}</td>
+          <td>{row.can_update_submission ? <button className="progress-exception" onClick={() => setException(row)}>Cập nhật</button> : "—"}</td>
         </tr>)}</tbody>
       </table></div>
       {!visible.length && <p className="progress-empty" role="status">{loading ? "Đang tải dữ liệu…" : !classroom ? "Chưa có lớp học trong phạm vi quản lý." : !assignments.length ? "Buổi học này chưa có bài tập được giao." : "Không tìm thấy học viên phù hợp."}</p>}
@@ -86,31 +87,7 @@ export default function SubmissionProgress({ refresh, notify }) {
       </div>
       <p className="progress-updated">{data?.updated_at && `Dữ liệu cập nhật: ${new Date(data.updated_at).toLocaleString("vi-VN", {timeZone:"Asia/Ho_Chi_Minh"})}`}</p>
     </div>
-    {exception && <ExceptionForm row={exception} close={() => setException(null)} saved={async () => { setException(null); notify("Đã cập nhật ngoại lệ."); await load(); }} />}
+    {exception && <SubmissionUpdateForm statusLabels={statusLabels} statusTones={statusTones} row={exception} close={() => setException(null)} saved={async () => { setException(null); notify("Đã cập nhật bài nộp của học viên."); await load(); }} />}
   </section>;
 }
 
-function ExceptionForm({ row, close, saved }) {
-  const [choices, setChoices] = useState(null), [status, setStatus] = useState(""), [reason, setReason] = useState("");
-  const [error, setError] = useState(""), [busy, setBusy] = useState(false);
-  useEffect(() => { api("exceptions/?form=1").then(result => {
-    const values = result.fields.find(f => f.name === "next_status")?.choices.filter(c => c.value) || [];
-    setChoices(values); setStatus(values[0]?.value || "");
-  }).catch(e => setError(e.message)); }, []);
-  async function submit(event) {
-    event.preventDefault();
-    if (!confirm(`Xác nhận cập nhật trạng thái bài nộp của ${row.student_name}?`)) return;
-    setBusy(true); setError("");
-    try { await api("exceptions/", { submission: row.submission_id, reason: reason.trim(), next_status: status }); await saved(); }
-    catch (e) { setError(e.message); }
-    finally { setBusy(false); }
-  }
-  return <div className="overlay"><form className="modal progress-exception-form" role="dialog" aria-modal="true" aria-label="Cập nhật ngoại lệ" onSubmit={submit}>
-    <button className="close" type="button" disabled={busy} onClick={close} aria-label="Đóng">×</button><h2>Cập nhật ngoại lệ</h2>
-    <p><b>{row.student_code} · {row.student_name}</b></p><p>{row.assignment} · {row.session}</p>
-    {error && <div className="alert" role="alert">{error}</div>}
-    <label>Trạng thái điều chỉnh<select aria-label="Trạng thái điều chỉnh" required value={status} disabled={!choices || busy} onChange={e => setStatus(e.target.value)}><option value="">Chọn trạng thái</option>{choices?.map(c => <option key={c.value} value={c.value}>{c.label}</option>)}</select></label>
-    <label>Lý do thay đổi trạng thái<textarea required maxLength={500} value={reason} disabled={busy} onChange={e => setReason(e.target.value)} /></label>
-    <div className="formfooter"><button type="button" disabled={busy} onClick={close}>Hủy</button><button className="primary" disabled={busy || !status || !reason.trim()}>{busy ? "Đang lưu…" : "Lưu thay đổi"}</button></div>
-  </form></div>;
-}

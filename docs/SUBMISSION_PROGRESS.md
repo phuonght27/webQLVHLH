@@ -19,18 +19,48 @@ Hệ thống chưa có trường lưu riêng lý do nộp muộn, nên cột nà
 Cột lý do thay đổi trạng thái lấy lý do của ngoại lệ gần nhất còn hiệu lực.
 Không dùng lý do thay đổi trạng thái làm lý do nộp muộn.
 
-Nút cập nhật ngoại lệ xuất hiện với bài nộp muộn/không hợp lệ khi tài khoản
-có quyền cập nhật ngoại lệ hiện có. Form cố định đúng bài nộp, lấy lựa chọn
-trạng thái từ schema server, bắt buộc lý do và yêu cầu xác nhận trước khi lưu.
-Sử dụng endpoint `/api/exceptions/` cũ. Không tạo bài nộp giả cho học viên chưa nộp.
-Tài khoản chỉ có quyền xem không được cấp thêm quyền cập nhật từ giao diện.
+Nút **Cập nhật** mở popup **Cập nhật bài nộp của học viên** theo hàng đã chọn.
+Thông tin học viên, lớp, buổi, deadline và trạng thái được đọc lại từ server,
+không cho sửa trên form. Lý do bắt buộc, tối đa 500 ký tự; mỗi vùng minh chứng
+và tệp bài làm cho phép chọn/kéo thả một file DOCX/PDF/PNG/JPEG tối đa 20 MB.
+Nếu lưu thất bại, form giữ nguyên lý do và file đã chọn để thử lại.
+
+Form dùng GET/POST `/api/progress/<allocation_id>/<enrollment_id>/update/`.
+Quyền ghi giữ theo `can_write("exceptions", user)` và phạm vi lớp hiện có;
+không cấp thêm quyền cho tài khoản chỉ được xem. Không cập nhật khi học viên
+đã rời lớp, lớp/khóa lưu trữ hoặc buổi học bị hủy. API ngoại lệ kiểm duyệt cũ
+vẫn giữ nguyên, nhưng popup này không có dropdown tự đổi trạng thái.
+
+Chỉ lý do/minh chứng: lưu lịch sử, không tạo Submission giả, không đổi trạng
+thái hay thời gian nộp. Khi có tệp bài làm: lưu Attachment vào đúng bài nộp,
+chỉ tạo Submission nếu cần, ghi nhận thời gian nhận file thực; sau deadline
+là Nộp muộn. Không tự gỡ cờ Không hợp lệ. Không xóa file bài làm đã có.
+Nếu nhận file trước hạn, học viên vẫn có thể hủy và xóa file theo luồng cũ;
+lịch sử cập nhật giữ tên/dung lượng file ngay cả khi file đã được xóa hợp lệ.
+
+Model `SubmissionUpdate` lưu người thực hiện, lý do, trạng thái trước/sau,
+minh chứng và liên kết tệp bài làm. Minh chứng nằm riêng tại
+`VAR_DIR/submission-evidence`, ngoài MEDIA_ROOT; chỉ tải qua API kiểm tra quyền
+của nhân sự thuộc phạm vi lớp. Cột lý do thay đổi trạng thái lấy bản ghi gần
+nhất giữa lịch sử cập nhật và ngoại lệ cũ. Link Minh chứng hiển thị nếu bản
+ghi mới nhất có minh chứng. Mọi thao tác có audit; khi lỗi giao dịch, file
+vừa lưu được dọn để tránh lưu một phần.
+
+**Cần chạy `python manage.py migrate` sau khi cập nhật code**, trước khi mở
+màn hình. Migration 0004 chỉ tạo bảng lịch sử mới, không thay đổi hay xóa
+bảng bài nộp, bài tập hoặc nhận xét cũ. Render start script đã chạy migrate;
+Codespaces cần chạy migrate thủ công trước khi khởi động lại.
 
 Sửa lỗi form ngoại lệ cũ: trường audit `previous` không nằm trong form nhưng
 bị kiểm tra rỗng trước khi server gán giá trị. Server nay gán trạng thái hiện
 tại từ bài nộp trong phạm vi quyền trước khi xác thực form; không nhận giá trị
 này từ client. Quy tắc chuyển trạng thái và ghi audit giữ nguyên.
 
-Không đổi model hay tạo migration. Kiểm tra backend gồm phạm vi lớp/buổi,
+Kiểm tra backend gồm phạm vi lớp/buổi,
 thông tin học viên, trạng thái cũ, bài tập cùng buổi, lớp rỗng, bài nháp và
 cập nhật ngoại lệ qua endpoint thật. Kiểm tra trình duyệt bằng dữ liệu giả
 gồm bộ chọn, thống kê, lọc, phân trang, refresh/lỗi tải, form ngoại lệ và mobile.
+
+Kiểm tra popup mới: lý do/minh chứng không làm mất trạng thái thiếu bài,
+tệp bài làm được ghi nhận nộp muộn, minh chứng tải đúng quyền, file sai/
+quá lớn bị chặn, giao dịch lỗi dọn file, quyền nhân sự và luồng hủy nộp cũ.

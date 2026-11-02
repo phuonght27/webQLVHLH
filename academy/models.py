@@ -393,6 +393,30 @@ class SubmissionException(Record):
         return self.reason
 
 
+def submission_evidence_storage():
+    from django.conf import settings
+    from django.core.files.storage import FileSystemStorage
+
+    # Evidence is private and must not be served by the public media URL.
+    return FileSystemStorage(location=settings.VAR_DIR / "submission-evidence")
+
+
+class SubmissionUpdate(models.Model):
+    allocation = models.ForeignKey(Allocation, on_delete=models.PROTECT)
+    enrollment = models.ForeignKey(Enrollment, on_delete=models.PROTECT)
+    author = models.ForeignKey(Account, on_delete=models.PROTECT)
+    reason = models.CharField(max_length=500)
+    previous_status = models.CharField(max_length=50)
+    next_status = models.CharField(max_length=50)
+    evidence = models.FileField(storage=submission_evidence_storage, blank=True)
+    evidence_name = models.CharField(max_length=255, blank=True)
+    evidence_size = models.PositiveBigIntegerField(default=0)
+    work_attachment = models.ForeignKey(Attachment, null=True, blank=True, on_delete=models.SET_NULL)
+    work_name = models.CharField(max_length=255, blank=True)
+    work_size = models.PositiveBigIntegerField(default=0)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+
 class ExamType(models.Model):
     name = models.CharField("Loại kiểm tra", max_length=50, unique=True)
 
