@@ -274,7 +274,7 @@ const roleMenus = [
         key: "progress",
         title: "Trạng thái nộp bài",
         icon: "✓",
-        roles: ["QLCN", "QLLH", "GV"],
+        roles: ["QLCN", "GV"],
       },
     ],
   },
@@ -493,7 +493,11 @@ function toggleMenu(title) {
         )}
         <div className="content">
           {section === "assignments" ? (
-            <Homework user={user} notify={notify} refresh={refresh} open={M} />
+            user.role === "QLLH" ? (
+              <SubmissionProgress refresh={refresh} notify={notify} />
+            ) : (
+              <Homework user={user} notify={notify} refresh={refresh} open={M} />
+            )
           ) : section === "progress" ? (
             <SubmissionProgress refresh={refresh} notify={notify} />
           ) : ["home", "learning"].includes(section) ? (

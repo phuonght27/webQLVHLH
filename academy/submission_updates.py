@@ -14,9 +14,18 @@ from .services import can_write, scoped
 from .views import api, audit, denied, guard
 
 
+def has_update_permission(user):
+    # Class managers may record received work for their own classes; this does
+    # not grant them the separate teacher-only moderation/exception actions.
+    return user.role == "QLLH" or can_write("exceptions", user)
+
+
 def may_update(user, allocation, enrollment):
     classroom = allocation.classroom
-    return bool(can_write("exceptions", user)
+    in_scope = (user.is_superuser
+        or (user.role == "QLLH" and classroom.manager_id == user.pk)
+        or (user.role == "GV" and classroom.teacher_id == user.pk))
+    return bool(has_update_permission(user) and in_scope
         and enrollment.classroom_id == allocation.classroom_id
         and not enrollment.deleted_at and not enrollment.left_at
         and not allocation.deleted_at and not allocation.assignment.deleted_at
@@ -53,7 +62,7 @@ def update_submission(r, allocation_id, enrollment_id):
     blocked = guard(r)
     if blocked is not None:
         return blocked
-    if not can_write("exceptions", r.user):
+    if not has_update_permission(r.user):
         return denied()
     if r.method == "GET":
         allocation, enrollment = get_targets(r.user, allocation_id, enrollment_id)

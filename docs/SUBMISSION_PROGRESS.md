@@ -1,8 +1,10 @@
 # Giao diện trạng thái nộp bài theo lớp và buổi học
 
-Mở **Quản lý Lớp học → Trạng thái nộp bài** bằng tài khoản quản lý chi nhánh,
-quản lý lớp học hoặc giáo viên. Màn hình lấy các lớp, buổi học và học viên trong
-phạm vi quyền hiện có của API. Không mở rộng quyền xem dữ liệu hay ghi ngoại lệ.
+Với vai trò **Quản lý lớp học**, mở **Quản lý Bài tập** để vào thẳng màn
+hình theo dõi trạng thái nộp bài và form cập nhật. Không đặt màn hình này trong
+menu Quản lý Lớp học của vai trò QLLH. Giáo viên và quản lý chi nhánh vẫn giữ
+vị trí truy cập theo dõi hiện có; luồng Quản lý Bài tập của giáo viên/học viên
+không thay đổi.
 
 Chọn lớp và buổi học để xem bốn ô thống kê, tìm theo mã/họ tên học viên,
 lọc trạng thái, phân trang và đổi số dòng mỗi trang. Nếu một buổi có nhiều bài
@@ -26,8 +28,10 @@ và tệp bài làm cho phép chọn/kéo thả một file DOCX/PDF/PNG/JPEG t�
 Nếu lưu thất bại, form giữ nguyên lý do và file đã chọn để thử lại.
 
 Form dùng GET/POST `/api/progress/<allocation_id>/<enrollment_id>/update/`.
-Quyền ghi giữ theo `can_write("exceptions", user)` và phạm vi lớp hiện có;
-không cấp thêm quyền cho tài khoản chỉ được xem. Không cập nhật khi học viên
+Quản lý lớp học được ghi nhận lý do, minh chứng và bài làm nhận thủ công
+trong đúng lớp mình phụ trách. Giáo viên giữ quyền hiện có trong lớp được
+phân công. Đây là quyền riêng của endpoint cập nhật bài nộp, không cấp thêm
+quyền kiểm duyệt ngoại lệ, sửa điểm, giao bài hay nhận xét cho QLLH. Không cập nhật khi học viên
 đã rời lớp, lớp/khóa lưu trữ hoặc buổi học bị hủy. API ngoại lệ kiểm duyệt cũ
 vẫn giữ nguyên, nhưng popup này không có dropdown tự đổi trạng thái.
 
@@ -64,3 +68,9 @@ gồm bộ chọn, thống kê, lọc, phân trang, refresh/lỗi tải, form ng
 Kiểm tra popup mới: lý do/minh chứng không làm mất trạng thái thiếu bài,
 tệp bài làm được ghi nhận nộp muộn, minh chứng tải đúng quyền, file sai/
 quá lớn bị chặn, giao dịch lỗi dọn file, quyền nhân sự và luồng hủy nộp cũ.
+
+Kiểm tra vị trí/phân quyền QLLH: mở Quản lý Bài tập trực tiếp thấy bảng trạng
+thái và nút Cập nhật; quản lý lớp khác bị chặn GET/POST phía server. Kiểm tra
+trình duyệt xác nhận form, tải file và lưu hoạt động cho QLLH, đồng thời GV
+vẫn tạo/giao bài và HV vẫn xem bài tập được giao. Không sửa cấu hình
+`can_write` hoặc các thay đổi người dùng đã thực hiện trong services.py.

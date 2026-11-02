@@ -10,7 +10,7 @@ from django.test import TestCase, override_settings
 from django.utils import timezone
 
 from . import tests as legacy_tests
-from .models import Attachment, Audit, Classroom, Enrollment, Submission, SubmissionUpdate
+from .models import Account, Attachment, Audit, Classroom, Enrollment, Submission, SubmissionUpdate
 
 
 class SubmissionUpdateTests(TestCase):
@@ -149,7 +149,7 @@ class SubmissionUpdateTests(TestCase):
         self.assertFalse(SubmissionUpdate.objects.exists())
 
     def test_permissions_and_wrong_class_are_enforced_on_server(self):
-        for user in [self.manager, self.student]:
+        for user in [self.student]:
             self.client.force_login(user)
             self.assertEqual(self.client.get(self.url).status_code, 403)
             self.assertEqual(self.client.post(self.url, {"reason": "Không có quyền"}).status_code, 403)
@@ -162,6 +162,34 @@ class SubmissionUpdateTests(TestCase):
         url = f"/api/progress/{self.allocation.pk}/{member.pk}/update/"
         self.assertEqual(self.client.post(url, {"reason": "Sai lớp"}).status_code, 404)
         self.assertFalse(SubmissionUpdate.objects.exists())
+
+    def test_class_manager_updates_from_homework_in_own_class(self):
+        self.client.force_login(self.manager)
+        self.assertEqual(self.client.get(self.url).status_code, 200)
+        row = self.client.get("/api/progress/").json()["rows"][0]
+        self.assertTrue(row["can_update_submission"])
+        self.assertFalse(row["can_update_exception"])
+        response = self.client.post(self.url, {"reason": "Quản lý nhận bài qua Zalo",
+            "work_file": self.pdf(), "evidence": self.pdf("proof.pdf")})
+        self.assertEqual(response.status_code, 200, response.content)
+        record = SubmissionUpdate.objects.get()
+        self.assertEqual(record.author, self.manager)
+        self.assertEqual(Submission.objects.get().status, "Nộp muộn")
+        proof_url = f"/api/progress/updates/{record.pk}/evidence/"
+        response = self.client.get(proof_url)
+        self.assertEqual(response.status_code, 200)
+        response.close()
+
+    def test_class_manager_cannot_update_another_managers_class(self):
+        other_manager = Account.objects.create(email="other-manager@example.com", role="QLLH",
+            full_name="Nguyễn Quản Lý", gender="Nam", phone="0901234567", address="Hà Nội",
+            must_change_password=False)
+        self.client.force_login(other_manager)
+        self.assertEqual(self.client.get(self.url).status_code, 404)
+        self.assertEqual(self.client.post(self.url, {"reason": "Ngoài phạm vi", "work_file": self.pdf()}).status_code, 404)
+        self.assertEqual(self.client.get("/api/progress/").json()["rows"], [])
+        self.assertFalse(SubmissionUpdate.objects.exists())
+        self.assertFalse(Submission.objects.exists())
 
     def test_inactive_membership_blocks_updates(self):
         self.member.left_at = timezone.now()
