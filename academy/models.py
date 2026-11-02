@@ -82,6 +82,9 @@ class Record(models.Model):
 
     def clean(self):
         for f in self._meta.fields:
+            # Auto-generated fields are excluded from ModelForms and validated on save.
+            if not f.editable:
+                continue
             value = getattr(self, f.name) if isinstance(f, models.CharField) else None
             if (
                 isinstance(f, models.CharField)
