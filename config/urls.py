@@ -3,7 +3,7 @@ from django.urls import path, re_path
 from django.views.generic import TemplateView
 from django.conf import settings
 from django.conf.urls.static import static
-from academy import views, homework
+from academy import views, homework, submission_updates
 
 urlpatterns = [
     path("api/homework/", homework.index),
@@ -15,6 +15,8 @@ urlpatterns = [
     path("api/auth/<str:action>/", views.auth),
     path("api/overview/", views.overview),
     path("api/progress/", views.progress),
+    path("api/progress/<int:allocation_id>/<int:enrollment_id>/update/", submission_updates.update_submission),
+    path("api/progress/updates/<int:pk>/evidence/", submission_updates.evidence_download),
     path("api/bulk/<str:kind>/", views.bulk),
     path("api/retakes/<int:pk>/review/", views.review),
     path("api/files/<int:pk>/", views.download),

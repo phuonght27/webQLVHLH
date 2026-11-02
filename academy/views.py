@@ -278,6 +278,13 @@ def form_for(kind, user, payload=None, instance=None):
             if instance
             else [],
         )
+    if kind == "exceptions" and payload:
+        # This required audit value is server-owned and absent from the form.
+        submission = f.fields["submission"].queryset.filter(
+            pk=payload.get("submission")
+        ).first()
+        if submission:
+            f.instance.previous = submission.status
     return f
 
 
@@ -912,34 +919,75 @@ def progress(r):
     blocked = guard(r)
     if blocked is not None:
         return blocked
+    from .submission_updates import may_update
+
     output = []
-    members = scoped(Enrollment, r.user).filter(deleted_at=None, left_at=None)
-    for member in members.select_related("student", "classroom"):
-        allocations = Allocation.objects.filter(
-            classroom=member.classroom, deleted_at=None, assignment__deleted_at=None
-        )
-        for allocation in allocations.select_related("assignment"):
-            sub = Submission.objects.filter(
-                enrollment=member, allocation=allocation, deleted_at=None
-            ).first()
-            status = (
-                sub.status
-                if sub
-                else ("Quá hạn" if timezone.now() > allocation.deadline else "Chưa nộp")
-            )
-            output.append(
-                {
-                    "student": str(member.student),
-                    "classroom": str(member.classroom),
-                    "assignment": allocation.assignment.title,
-                    "deadline": timezone.localtime(allocation.deadline).strftime(
-                        "%d/%m/%Y %H:%M"
-                    ),
-                    "status": status,
-                    "submission_id": sub.pk if sub else None,
-                }
-            )
-    return JsonResponse({"rows": output})
+    members = list(scoped(Enrollment, r.user).filter(
+        deleted_at=None, left_at=None).select_related("student", "classroom"))
+    classes = scoped(Classroom, r.user).filter(deleted_at=None).order_by("code")
+    allocations = list(Allocation.objects.filter(
+        classroom__in=classes, deleted_at=None, assignment__deleted_at=None
+    ).select_related("assignment", "session", "classroom__course"))
+    by_class = {}
+    for allocation in allocations:
+        by_class.setdefault(allocation.classroom_id, []).append(allocation)
+    submissions = list(Submission.objects.filter(
+        enrollment__in=members, deleted_at=None).select_related("allocation"))
+    by_member_allocation = {(sub.enrollment_id, sub.allocation_id): sub for sub in submissions}
+    latest_change = {}
+    for exception in SubmissionException.objects.filter(
+        submission__in=submissions, deleted_at=None).select_related("submission").order_by("pk"):
+        key = (exception.submission.enrollment_id, exception.submission.allocation_id)
+        latest_change[key] = (exception.created_at, exception.reason, "")
+    for update in SubmissionUpdate.objects.filter(
+        enrollment__in=members, allocation__in=allocations).order_by("pk"):
+        key = (update.enrollment_id, update.allocation_id)
+        previous = latest_change.get(key)
+        if not previous or update.created_at > previous[0]:
+            latest_change[key] = (update.created_at, update.reason,
+                f"/api/progress/updates/{update.pk}/evidence/" if update.evidence else "")
+    for member in members:
+        for allocation in by_class.get(member.classroom_id, []):
+            sub = by_member_allocation.get((member.pk, allocation.pk))
+            status = sub.status if sub else (
+                "Quá hạn" if timezone.now() > allocation.deadline else "Chưa nộp")
+            change = latest_change.get((member.pk, allocation.pk))
+            output.append({
+                "student": str(member.student),
+                "student_name": member.student.full_name,
+                "student_code": member.student.username,
+                "student_id": member.student_id,
+                "enrollment_id": member.pk,
+                "classroom": str(member.classroom),
+                "classroom_id": member.classroom_id,
+                "assignment": allocation.assignment.title,
+                "allocation_id": allocation.pk,
+                "session_id": allocation.session_id,
+                "session": f"Buổi {allocation.session.number}",
+                "deadline": timezone.localtime(allocation.deadline).strftime("%d/%m/%Y %H:%M"),
+                "status": status,
+                "submission_id": sub.pk if sub else None,
+                "late_reason": "",
+                "change_reason": change[1] if change else "",
+                "evidence_url": change[2] if change else "",
+                "can_update_submission": may_update(r.user, allocation, member),
+                "can_update_exception": bool(can_write("exceptions", r.user) and sub and sub.submitted_at),
+            })
+    return JsonResponse({
+        "rows": output,
+        "classes": [{"id": c.pk, "label": str(c), "code": c.code} for c in classes],
+        "sessions": [
+            {"id": s.pk, "classroom_id": s.classroom_id,
+             "label": f"Buổi {s.number}" + (" (đã hủy)" if s.cancelled else ""),
+             "date": s.date.isoformat()}
+            for s in scoped(Session, r.user).order_by("-date", "-number", "-pk")
+        ],
+        "allocations": [
+            {"id": a.pk, "classroom_id": a.classroom_id, "session_id": a.session_id,
+             "label": a.assignment.title} for a in allocations
+        ],
+        "updated_at": timezone.now().isoformat(),
+    })
 
 @api
 @require_http_methods(["POST"])

@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { api } from "./api";
 import "./homework.css";
+import { DetailIcon, StudentDetailInfo, StudentUploadArea, StudentFileTable, StudentFeedback } from "./StudentAssignmentDetail";
 
 const date = (value) => value ? new Date(value).toLocaleString("vi-VN", { timeZone: "Asia/Ho_Chi_Minh", dateStyle: "short", timeStyle: "short" }) : "—";
 const size = (bytes) => `${(bytes / 1024 / 1024).toFixed(2)} MB`;
@@ -88,8 +89,14 @@ export default function Homework({ user, notify, refresh, open }) {
         </>}
       </section>)}
     </> : <>
-      <button onClick={() => { select(null); setDetail(null); }}>← Quay lại danh sách bài tập</button>
-      {!detail ? <p>Đang tải chi tiết bài tập…</p> : <>
+      <button className={student ? "student-detail-back" : ""} onClick={() => { select(null); setDetail(null); }}>← Quay lại danh sách bài tập</button>
+      {!detail ? <p>Đang tải chi tiết bài tập…</p> : student ? (
+        <div className="student-assignment-layout">
+          <StudentDetailInfo detail={detail} formatDate={date} />
+          <StudentSubmission key={detail.id} detail={detail} reload={reload} notify={notify} />
+          <StudentFeedback comments={detail.submission?.comments} formatDate={date} />
+        </div>
+      ) : <>
         <section className="card homework-card"><span className="eyebrow">CHI TIẾT BÀI TẬP</span><h2>{detail.title}</h2>
           <p>{detail.classroom} · {detail.session} · {detail.date.split("-").reverse().join("/")}</p>
           <p>Giáo viên: <b>{detail.teacher}</b> · Hạn nộp: <b>{date(detail.deadline)}</b></p>
@@ -97,7 +104,7 @@ export default function Homework({ user, notify, refresh, open }) {
           <h3>Tài liệu đề bài</h3>{detail.files.length ? <Files files={detail.files} /> : <p className="muted">Không có tệp đính kèm.</p>}
           {teacher && <button onClick={() => open({ type: "edit", kind: "allocations", id: detail.id })}>Chỉnh sửa lớp / buổi / hạn nộp</button>}
         </section>
-        {student ? <StudentSubmission key={detail.id} detail={detail} reload={reload} notify={notify} /> : <TeacherSubmissions key={detail.id} detail={detail} teacher={teacher} reload={reload} notify={notify} />}
+        <TeacherSubmissions key={detail.id} detail={detail} teacher={teacher} reload={reload} notify={notify} />
       </>}
     </>}
     {creating && <CreateHomework close={() => create(false)} done={async () => { create(false); await reload(); }} notify={notify} />}
@@ -122,25 +129,30 @@ function StudentSubmission({ detail, reload, notify }) {
     });
     setPending([]);
   }
-  return <section className="card homework-card"><div className="cardhead"><h3>Bài nộp của bạn</h3><span className="badge">{sub?.status || (new Date(detail.deadline) < new Date() ? "Quá hạn" : "Chưa nộp")}</span></div>
+  return <section className="card student-detail-work" aria-labelledby="student-work-heading">
+    <h2 id="student-work-heading">Làm bài tập</h2>
+    <div className="student-detail-banner"><DetailIcon name="info" /><span>{sub?.submitted_at
+      ? "Bạn đã nộp bài. File bài làm đã được gửi đến giáo viên."
+      : detail.can_submit ? "Vui lòng tải file bài làm của bạn lên hệ thống trước khi nộp bài."
+      : "Bạn chỉ có quyền xem bài tập của lớp này."}</span></div>
     {error && <div className="alert" role="alert">{error}</div>}
     {sub?.submitted_at && <p>Thời gian nộp: <b>{date(sub.submitted_at)}</b></p>}
-    {sub?.content && <p className="preserve-lines">{sub.content}</p>}
-    <Files files={sub?.files} busy={busy} remove={detail.can_submit ? id => perform(() => api(`homework/${detail.id}/files/${id}/`, null, "DELETE")) : null} />
-    {detail.can_submit ? <>
-      <label className="homework-upload">Thêm file bài làm
-        <input type="file" multiple accept={accept} disabled={busy} onChange={e => { const files = Array.from(e.target.files); e.target.value = ""; upload(files); }} />
-        <small>PDF, DOCX, PNG, JPEG · Tối đa 10 file, mỗi file không quá 20 MB.</small>
-      </label>
-      {pending.length > 0 && <p role="status">Đang tải: {pending.join(", ")}…</p>}
-      <p className="muted">File đã tải lên được lưu nháp. Giáo viên chỉ nhận được bài sau khi bạn xác nhận nộp.</p>
-      {new Date(detail.deadline) < new Date() && <p className="alert">Đã qua hạn nộp. Bài gửi lúc này được ghi nhận là “Nộp muộn”.</p>}
-      <button className="primary" disabled={busy || !sub?.files.length} onClick={() => confirmSubmit(true)}>Nộp bài</button>
-    </> : <p className="muted">{sub?.submitted_at ? "Bài đã nộp. Muốn thay đổi file, hãy hủy nộp trước hạn rồi nộp lại." : "Bạn chỉ có quyền xem bài tập của lớp này."}</p>}
-    {detail.can_cancel && <button className="danger" disabled={busy} onClick={() => {
-      if (confirm("Bạn có chắc chắn hủy nộp bài?")) perform(async () => { await api(`homework/${detail.id}/submit/`, null, "DELETE"); notify("Đã hủy nộp. Các file được giữ lại để bạn sửa và nộp lại."); });
-    }}>Hủy nộp bài</button>}
-    <Feedback comments={sub?.comments} />
+    {sub?.content && <p className="preserve-lines detail-existing-content">{sub.content}</p>}
+    {detail.can_submit && <StudentUploadArea disabled={busy} onUpload={upload} />}
+    <StudentFileTable files={sub?.files} pending={pending} busy={busy}
+      remove={detail.can_submit ? id => perform(() => api(`homework/${detail.id}/files/${id}/`, null, "DELETE")) : null} />
+    <div className="student-detail-notes"><strong><DetailIcon name="info" />Lưu ý:</strong><ul>
+      <li>Bạn chỉ có thể xóa file trước khi nộp bài.</li>
+      <li>Sau khi nộp bài, bạn sẽ không thể chỉnh sửa file đã upload.</li>
+      <li>Muốn thay đổi bài đã nộp, hãy hủy nộp trước hạn rồi nộp lại.</li>
+    </ul></div>
+    {detail.can_submit && new Date(detail.deadline) < new Date() && <p className="alert">Đã qua hạn nộp. Bài gửi lúc này được ghi nhận là “Nộp muộn”.</p>}
+    <div className="student-detail-actions">
+      {detail.can_cancel && <button className="danger" disabled={busy} onClick={() => {
+        if (confirm("Bạn có chắc chắn hủy nộp bài?")) perform(async () => { await api(`homework/${detail.id}/submit/`, null, "DELETE"); notify("Đã hủy nộp. Các file được giữ lại để bạn sửa và nộp lại."); });
+      }}>Hủy nộp bài</button>}
+      {detail.can_submit && <button className="primary student-detail-submit" disabled={busy || !sub?.files.length} onClick={() => confirmSubmit(true)}><DetailIcon name="send" />Nộp bài</button>}
+    </div>
     {confirming && <Dialog title="Xác nhận nộp bài" close={() => !busy && confirmSubmit(false)}>
       <p>Bạn có chắc chắn nộp bài hay không?</p><h3>{detail.title}</h3><p>{detail.classroom} · {detail.session}</p>
       <Files files={sub?.files} />

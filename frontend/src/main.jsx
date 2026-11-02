@@ -1,8 +1,11 @@
 import React, { useState, useEffect } from "react";
 import { createRoot } from "react-dom/client";
 import "./style.css";
+import SidebarIcon from "./SidebarIcon";
+import "./sidebar-icons.css";
 import { api } from "./api";
 import Homework from "./Homework";
+import SubmissionProgress from "./SubmissionProgress";
 const sections = [
   ["⌂", "home", "Trang chủ"],
   ["♙", "accounts", "Quản lý tài khoản"],
@@ -267,6 +270,12 @@ const roleMenus = [
         icon: "▦",
         roles: ["QLCN", "QLLH", "GV", "HV"],
       },
+      {
+        key: "progress",
+        title: "Trạng thái nộp bài",
+        icon: "✓",
+        roles: ["QLCN", "GV"],
+      },
     ],
   },
   {
@@ -365,7 +374,7 @@ function toggleMenu(title) {
       onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
       title="Thu gọn / Mở rộng menu"
     >
-      ☰
+      <SidebarIcon name="menu" />
     </button>
   </div>
 
@@ -398,7 +407,7 @@ function toggleMenu(title) {
               }
             }}
           >
-            <span className="sidebar-icon">{menu.icon}</span>
+            <span className="sidebar-icon"><SidebarIcon name={menu.key} /></span>
 
             {!sidebarCollapsed && (
               <>
@@ -406,8 +415,8 @@ function toggleMenu(title) {
                   {menu.title}
                 </span>
                 {isGroup && (
-                  <span className="sidebar-chevron">
-                    {isExpanded ? "⌃" : "⌄"}
+                  <span className={"sidebar-chevron" + (isExpanded ? " is-expanded" : "")}>
+                    <SidebarIcon name="chevron" />
                   </span>
                 )}
               </>
@@ -431,7 +440,7 @@ function toggleMenu(title) {
                 >
 
 <span className="sidebar-child-icon">
-  {child.icon}
+  <SidebarIcon name={child.key} />
 </span>
 <span className="sidebar-child-label">
   {child.title}
@@ -455,19 +464,19 @@ function toggleMenu(title) {
       }
     }}
   >
-    ⇥ {!sidebarCollapsed && "Đăng xuất"}
+    <SidebarIcon name="logout" /> {!sidebarCollapsed && "Đăng xuất"}
   </button>
 </aside>
 
       <main>
         <header>
-<h1>
-  {visibleMenus.find(menu => menu.key === section)?.title ||
-    visibleMenus
-      .flatMap(menu => menu.children || [])
-      .find(child => child.key === section)?.title ||
-    "Tổng quan"}
-</h1>
+          <h1>
+            {visibleMenus.find(menu => menu.key === section)?.title ||
+              visibleMenus
+                .flatMap(menu => menu.children || [])
+                .find(child => child.key === section)?.title ||
+              "Tổng quan"}
+          </h1>
           <button className="profile" onClick={() => M({ type: "profile" })}>
             <span className="avatar">{user.name?.split(" ").pop()?.[0]}</span>
             <span>
@@ -490,9 +499,13 @@ function toggleMenu(title) {
         )}
         <div className="content">
           {section === "assignments" ? (
-            <Homework user={user} notify={notify} refresh={refresh} open={M} />
+            user.role === "QLLH" ? (
+              <SubmissionProgress refresh={refresh} notify={notify} />
+            ) : (
+              <Homework user={user} notify={notify} refresh={refresh} open={M} />
+            )
           ) : section === "progress" ? (
-            <Progress run={run} />
+            <SubmissionProgress refresh={refresh} notify={notify} />
           ) : ["home", "learning"].includes(section) ? (
             <Dashboard
               learning={section === "learning"}
@@ -638,6 +651,17 @@ function Auth({ user, onLogin, run, error, notify, toast }) {
     });
     B(false);
   }
+  if (user) {
+    return (
+      <FirstPasswordChange
+        run={run}
+        error={error}
+        toast={toast}
+        onLogin={onLogin}
+        notify={notify}
+      />
+    );
+  }
   return (
     <div className="auth">
       {toast && <div className="toast">{toast}</div>}
@@ -765,6 +789,128 @@ function Auth({ user, onLogin, run, error, notify, toast }) {
         )}
       </form>
       <p className="authfoot">Quản lý tập trung · Kết nối việc dạy và học</p>
+    </div>
+  );
+}
+function FirstPasswordChange({ run, error, toast, onLogin, notify }) {
+  const [visible, setVisible] = useState({});
+  const [busy, setBusy] = useState(false);
+  const [fieldErrors, setFieldErrors] = useState({});
+  const [serverError, setServerError] = useState("");
+  const fields = [
+    ["old_password", "Mật khẩu hiện tại", "current-password"],
+    ["password", "Mật khẩu mới", "new-password"],
+    ["confirm_password", "Xác nhận mật khẩu", "new-password"],
+  ];
+
+  function validate(values) {
+    const errors = {};
+    if (!values.old_password) errors.old_password = "Vui lòng nhập mật khẩu hiện tại.";
+    if (!values.password) {
+      errors.password = "Vui lòng nhập mật khẩu mới.";
+    } else if (
+      values.password.length < 10 ||
+      !/[A-Z]/.test(values.password) ||
+      !/[a-z]/.test(values.password) ||
+      !/[0-9]/.test(values.password) ||
+      !/[^A-Za-z0-9]/.test(values.password)
+    ) {
+      errors.password = "Mật khẩu mới phải có tối thiểu 10 ký tự, gồm chữ hoa, chữ thường, số và ký tự đặc biệt.";
+    } else if (values.password === values.old_password) {
+      errors.password = "Mật khẩu mới phải khác mật khẩu hiện tại.";
+    }
+    if (!values.confirm_password) {
+      errors.confirm_password = "Vui lòng xác nhận mật khẩu mới.";
+    } else if (values.confirm_password !== values.password) {
+      errors.confirm_password = "Xác nhận mật khẩu không khớp với mật khẩu mới.";
+    }
+    return errors;
+  }
+
+  async function submit(e) {
+    e.preventDefault();
+    const values = Object.fromEntries(new FormData(e.currentTarget));
+    const errors = validate(values);
+    setFieldErrors(errors);
+    setServerError("");
+    if (Object.keys(errors).length) return;
+    setBusy(true);
+    try {
+      await run(async () => {
+        try {
+          await api("auth/password/", {
+            old_password: values.old_password,
+            password: values.password,
+          });
+          onLogin(null);
+          notify("Đã đổi mật khẩu. Vui lòng đăng nhập lại.");
+        } catch (err) {
+          const message = err.message || "Không thể cập nhật mật khẩu.";
+          if (/mật khẩu hiện tại không đúng/i.test(message)) {
+            setFieldErrors({ old_password: "Mật khẩu hiện tại không đúng. Vui lòng kiểm tra và nhập lại." });
+          } else {
+            setServerError(message);
+          }
+        }
+      });
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  return (
+    <div className="auth first-password-auth">
+      {toast && <div className="toast">{toast}</div>}
+      <Logo />
+      <form className="first-password-card" onSubmit={submit} noValidate>
+        <div className="first-password-notice" role="status">
+          <span className="first-password-warning" aria-hidden="true">!</span>
+          <div>
+            <strong>Bạn đang sử dụng mật khẩu tạm thời.</strong>
+            <p>Vui lòng đổi mật khẩu mới để tiếp tục sử dụng hệ thống.</p>
+          </div>
+        </div>
+        {(serverError || error) && (
+          <div role="alert" className="first-password-error">{serverError || error}</div>
+        )}
+        {fields.map(([name, title, autocomplete]) => (
+          <label key={name} htmlFor={name} className="first-password-label">
+            {title}:
+            <span className="first-password-input">
+              <span className="first-password-lock" aria-hidden="true">♙</span>
+              <input
+                id={name}
+                name={name}
+                type={visible[name] ? "text" : "password"}
+                autoComplete={autocomplete}
+                aria-invalid={!!fieldErrors[name]}
+                aria-describedby={fieldErrors[name] ? name + "-error" : undefined}
+                onChange={() => {
+                  setFieldErrors(prev => ({ ...prev, [name]: "" }));
+                  setServerError("");
+                }}
+              />
+              <button
+                type="button"
+                aria-label={visible[name] ? "Ẩn " + title : "Hiện " + title}
+                aria-pressed={!!visible[name]}
+                onClick={() => setVisible(v => ({ ...v, [name]: !v[name] }))}
+              >
+                {visible[name] ? "◉" : "◎"}
+              </button>
+            </span>
+            {fieldErrors[name] && (
+              <span className="first-password-error" id={name + "-error"} role="alert">
+                <span className="first-password-error-icon" aria-hidden="true">!</span>
+                {fieldErrors[name]}
+              </span>
+            )}
+          </label>
+        ))}
+        <button className="primary first-password-submit" type="submit" disabled={busy}>
+          {busy ? "Đang cập nhật…" : "Cập nhật"}
+        </button>
+      </form>
     </div>
   );
 }
@@ -1754,83 +1900,6 @@ function saveCSV(name, rows) {
   setTimeout(() => URL.revokeObjectURL(url), 1000);
 }
 createRoot(document.getElementById("root")).render(<App />);
-
-function Progress({ run }) {
-  const [rows, R] = useState([]),
-    [q, Q] = useState(""),
-    [status, S] = useState("");
-  useEffect(() => {
-    run(async () => R((await api("progress/")).rows));
-  }, []);
-  return (
-    <>
-      <div className="filters">
-        <input
-          value={q}
-          onChange={(e) => Q(e.target.value)}
-          placeholder="Tìm học viên, lớp, bài tập…"
-        />
-        <select value={status} onChange={(e) => S(e.target.value)}>
-          <option value="">Tất cả trạng thái</option>
-          {["Chưa nộp", "Đã nộp", "Quá hạn", "Nộp muộn", "Không hợp lệ"].map(
-            (s) => (
-              <option key={s}>{s}</option>
-            ),
-          )}
-        </select>
-      </div>
-      <div className="card">
-        <h3>Trạng thái nộp bài của học viên</h3>
-        <div className="tablewrap">
-          <table>
-            <thead>
-              <tr>
-                {[
-                  "Học viên",
-                  "Lớp học",
-                  "Bài tập",
-                  "Hạn nộp",
-                  "Trạng thái",
-                ].map((h) => (
-                  <th key={h}>{h}</th>
-                ))}
-              </tr>
-            </thead>
-            <tbody>
-              {rows
-                .filter(
-                  (r) =>
-                    (!status || status === r.status) &&
-                    Object.values(r)
-                      .join(" ")
-                      .toLowerCase()
-                      .includes(q.toLowerCase()),
-                )
-                .map((r, i) => (
-                  <tr key={i}>
-                    <td>{r.student}</td>
-                    <td>{r.classroom}</td>
-                    <td>{r.assignment}</td>
-                    <td>{r.deadline}</td>
-                    <td>
-                      <span
-                        className={
-                          "badge " + (r.status === "Đã nộp" ? "green" : "")
-                        }
-                      >
-                        {r.status}
-                      </span>
-                    </td>
-                  </tr>
-                ))}
-            </tbody>
-          </table>
-        </div>
-        {!rows.length && <Empty />}
-      </div>
-    </>
-  );
-}
 
 function AllocationEditor({ assignment, done, notify }) {
   const [fields, F] = useState(null),

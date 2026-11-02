@@ -9,6 +9,9 @@
 3. Mở tab **Ports**, chọn **Open in Browser** ở cổng **8000**. Giữ chế độ **Private**.
 4. Đăng nhập `quanly@example.com`. Mở file `var/demo-credentials.txt` trong Codespaces để lấy mật khẩu của Codespace này. Không commit file đó.
 
+cd /workspaces/webQLVHLH
+python manage.py runserver 0.0.0.0:8000
+
 Nếu website chưa chạy, mở terminal Codespaces và chạy `bash .devcontainer/start.sh`. Nhật ký máy chủ ở `/tmp/webintern-server.log`. Sau khi sửa React, chạy `npm run build --prefix frontend` rồi tải lại trang. Sau khi sửa Python, dừng tiến trình `manage.py runserver` của dự án trong terminal/Processes, rồi chạy lại lệnh start. Mỗi Codespace có CSDL và mật khẩu riêng; không dùng mật khẩu từ môi trường cloud trước.
 
 GitHub Codespaces chạy môi trường phát triển trên trình duyệt, không phải GitHub Pages và không phải bản triển khai production. Codespaces phụ thuộc quyền và hạn mức tài khoản GitHub. Cấu hình đã được thêm; việc tạo và chạy Codespace thực cần thực hiện trên tài khoản của bạn.

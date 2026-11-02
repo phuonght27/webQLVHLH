@@ -1318,3 +1318,135 @@ nav button {
   background: #477cf0;
   color: #fff;
 }
+
+
+/* First-time password change: scoped to avoid affecting login and other forms */
+.first-password-auth {
+  padding: 28px 16px;
+  background:
+    radial-gradient(ellipse 80% 38% at 10% 96%, #dbe8ff 0%, transparent 85%),
+    radial-gradient(ellipse 70% 35% at 100% 100%, #d5e4ff 0%, transparent 90%),
+    linear-gradient(180deg, #f9fbff, #f0f5ff);
+}
+.first-password-auth .logo {
+  margin-bottom: 20px;
+  text-align: center;
+  color: #3159aa;
+}
+.first-password-auth .logo strong { color: #3969d6; }
+.first-password-auth .first-password-card {
+  width: 440px;
+  max-width: 100%;
+  padding: 26px 27px 28px;
+  border-radius: 10px;
+  box-shadow: 0 12px 35px #213d7420;
+  background: #fff;
+}
+.first-password-notice {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 16px 13px;
+  background: #fff8e3;
+  border-radius: 8px;
+  color: #262d3b;
+  font-size: 12px;
+  line-height: 1.5;
+  margin-bottom: 18px;
+}
+.first-password-notice strong { display: block; font-weight: 700; }
+.first-password-notice p { margin: 3px 0 0; }
+.first-password-warning {
+  display: grid;
+  place-items: center;
+  flex: 0 0 22px;
+  height: 22px;
+  border-radius: 50%;
+  color: white;
+  background: #e6a52f;
+  font-weight: 700;
+  font-size: 15px;
+}
+.first-password-auth .first-password-label {
+  color: #273b64;
+  font-size: 12px;
+  font-weight: 700;
+  gap: 7px;
+  margin: 16px 0;
+}
+.first-password-input { position: relative; display: block; }
+.first-password-input input {
+  display: block;
+  width: 100%;
+  height: 43px;
+  padding: 10px 48px 10px 42px;
+  border: 1px solid #e0e6f0;
+  border-radius: 7px;
+  background: white;
+}
+.first-password-lock {
+  position: absolute;
+  left: 15px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: #91a0ba;
+  pointer-events: none;
+  font-size: 16px;
+}
+.first-password-input button {
+  position: absolute;
+  right: 5px;
+  top: 50%;
+  transform: translateY(-50%);
+  border: 0;
+  padding: 8px 10px;
+  color: #8c98ac;
+  background: transparent;
+  font-size: 20px;
+}
+.first-password-input button:hover { color: #3969d6; }
+.first-password-auth .first-password-submit {
+  width: 100%;
+  margin-top: 5px;
+  height: 44px;
+  border-radius: 6px;
+  background: #3866e9;
+  border-color: #3866e9;
+  font-weight: 700;
+}
+.first-password-auth .first-password-submit:hover { background: #2d55cb; }
+@media (max-width: 480px) {
+  .first-password-auth .first-password-card { padding: 20px 18px 24px; }
+}
+
+/* Field-level error messages on the first password change screen */
+.first-password-auth .first-password-input input[aria-invalid="true"] {
+  border-color: #e36a6a;
+  box-shadow: 0 0 0 1px #f3b3b3;
+}
+.first-password-auth .first-password-error {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  padding: 10px 11px;
+  border: 1px solid #ef9292;
+  border-radius: 6px;
+  background: #fff6f6;
+  color: #d53f3f;
+  font-size: 12px;
+  line-height: 1.55;
+  font-weight: 500;
+  margin-top: 9px;
+}
+.first-password-error-icon {
+  display: grid;
+  place-items: center;
+  flex: 0 0 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: #db4141;
+  color: white;
+  font-size: 11px;
+  font-weight: 700;
+  margin-top: 1px;
+}
