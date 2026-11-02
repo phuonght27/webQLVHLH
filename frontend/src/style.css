@@ -1418,3 +1418,35 @@ nav button {
 @media (max-width: 480px) {
   .first-password-auth .first-password-card { padding: 20px 18px 24px; }
 }
+
+/* Field-level error messages on the first password change screen */
+.first-password-auth .first-password-input input[aria-invalid="true"] {
+  border-color: #e36a6a;
+  box-shadow: 0 0 0 1px #f3b3b3;
+}
+.first-password-auth .first-password-error {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  padding: 10px 11px;
+  border: 1px solid #ef9292;
+  border-radius: 6px;
+  background: #fff6f6;
+  color: #d53f3f;
+  font-size: 12px;
+  line-height: 1.55;
+  font-weight: 500;
+  margin-top: 9px;
+}
+.first-password-error-icon {
+  display: grid;
+  place-items: center;
+  flex: 0 0 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: #db4141;
+  color: white;
+  font-size: 11px;
+  font-weight: 700;
+  margin-top: 1px;
+}
