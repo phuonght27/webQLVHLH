@@ -1629,3 +1629,104 @@ nav button {
     padding: 0;
   }
 }
+
+
+/* Account information modal — reference layout */
+.modal:has(.profile-view) {
+  width: min(100% - 32px, 540px);
+  max-width: 540px;
+  padding: 27px 25px 25px;
+  border-radius: 11px;
+  background: #fff;
+}
+.profile-view { width: 100%; }
+.profile-view h2 {
+  color: #1d2e62;
+  font-size: 22px;
+  font-weight: 700;
+  margin: 0 36px 22px 0;
+}
+.profile-view-avatar {
+  display: flex;
+  justify-content: center;
+  margin: 4px 0 22px;
+}
+.profile-view-avatar img,
+.profile-view-placeholder {
+  width: 116px;
+  height: 116px;
+  border-radius: 50%;
+  object-fit: cover;
+}
+.profile-view-placeholder {
+  display: grid;
+  place-items: center;
+  background: #eaf0fa;
+  color: #3856a3;
+  font-size: 42px;
+  font-weight: 700;
+}
+.profile-view-details {
+  display: block;
+  margin: 0;
+  font-size: 13px;
+}
+.profile-view-row {
+  display: grid;
+  grid-template-columns: 150px minmax(0, 1fr);
+  gap: 12px;
+  align-items: center;
+  min-height: 54px;
+  padding: 12px 0;
+  border-bottom: 1px solid #e7eaf1;
+}
+.profile-view-row:last-child { border-bottom: none; }
+.profile-view-row dt {
+  color: #263763;
+  font-weight: 700;
+}
+.profile-view-row dd {
+  margin: 0;
+  color: #242b3b;
+  line-height: 1.5;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+.profile-view-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  align-items: center;
+  gap: 10px;
+  margin-top: 26px;
+}
+.profile-view-actions button {
+  display: inline-flex;
+  justify-content: center;
+  align-items: center;
+  gap: 8px;
+  padding: 11px 15px;
+  min-height: 43px;
+  border: 1px solid #cdd6e8;
+  border-radius: 6px;
+  color: #283e7a;
+  background: #fff;
+  font-weight: 600;
+  box-shadow: 0 1px 3px rgba(25, 44, 88, .07);
+}
+.profile-view-actions button:hover { background: #f1f5ff; }
+.profile-view-actions button.primary {
+  margin-left: auto;
+  min-width: 88px;
+  background: #355ce9;
+  border-color: #355ce9;
+  color: #fff;
+}
+.profile-view-actions button.primary:hover { background: #2949c5; }
+@media (max-width: 520px) {
+  .modal:has(.profile-view) { padding: 23px 18px; }
+  .profile-view h2 { font-size: 20px; }
+  .profile-view-row { grid-template-columns: 115px minmax(0, 1fr); gap: 8px; }
+  .profile-view-actions { justify-content: flex-start; }
+  .profile-view-actions button { flex: 1 1 auto; }
+}
