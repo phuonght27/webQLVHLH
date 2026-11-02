@@ -546,43 +546,45 @@ function toggleMenu(title) {
                 notify={notify}
               />
             ) : modal.type === "profile" ? (
-              <>
+              <div className="profile-view">
                 <h2>Thông tin tài khoản</h2>
-                <dl>
+                <div className="profile-view-avatar">
+                  {user.avatar ? (
+                    <img src={user.avatar} alt="Ảnh đại diện" />
+                  ) : (
+                    <div className="profile-view-placeholder" aria-label="Chưa có ảnh đại diện">
+                      {user.name?.trim()?.charAt(0) || "👤"}
+                    </div>
+                  )}
+                </div>
+                <dl className="profile-view-details">
                   {[
-                    ["Mã người dùng", user.code],
                     ["Họ và tên", user.name],
-                    ["Vai trò", user.role_label],
-                    ["Email", user.email],
                     ["Giới tính", user.gender],
+                    ["Mã người dùng", user.code],
+                    ["Email", user.email],
                     ["Số điện thoại", user.phone],
                     ["Địa chỉ", user.address],
-                  ].map(([k, v]) => (
-                    <React.Fragment key={k}>
-                      <dt>{k}</dt>
-                      <dd>{v}</dd>
-                    </React.Fragment>
+                    ["Vai trò", user.role_label],
+                  ].map(([label, value]) => (
+                    <div className="profile-view-row" key={label}>
+                      <dt>{label}</dt>
+                      <dd>{value || "—"}</dd>
+                    </div>
                   ))}
                 </dl>
-
-              <div style={{ display: "flex", gap: "12px", marginTop: "20px" }}>
-                <button
-                  className="primary"
-                  onClick={() => M({ type: "edit-profile" })}
-                >
-                  ✎ Chỉnh sửa
-                </button>
-
-                <button
-                  className="primary"
-                  onClick={() => M({ type: "password" })}
-                >
-                  Đổi mật khẩu
-                </button>
+                <div className="profile-view-actions">
+                  <button type="button" onClick={() => M({ type: "edit-profile" })}>
+                    <span aria-hidden="true">✎</span> Chỉnh sửa
+                  </button>
+                  <button type="button" onClick={() => M({ type: "password" })}>
+                    <span aria-hidden="true">♙</span> Đổi mật khẩu
+                  </button>
+                  <button type="button" className="primary" onClick={() => M(null)}>
+                    Đóng
+                  </button>
+                </div>
               </div>
-
-              </>
-
             ) : modal.type === "edit-profile" ? (
               <EditProfile
                 user={user}
