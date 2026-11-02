@@ -28,6 +28,267 @@ function Logo() {
     </div>
   );
 }
+
+function EditProfile({ user, onSave, onCancel, run }) {
+  const [form, setForm] = React.useState({
+    name: user.name || "",
+    gender: user.gender || "",
+    phone: user.phone || "",
+    address: user.address || "",
+  });
+
+  const [avatar, setAvatar] = React.useState(null);
+  const [preview, setPreview] = React.useState(user.avatar || "");
+  const [errors, setErrors] = React.useState({});
+  const [saving, setSaving] = React.useState(false);
+
+  const change = (field, value) => {
+    setForm(prev => ({ ...prev, [field]: value }));
+    setErrors(prev => ({ ...prev, [field]: "" }));
+  };
+
+  const validate = () => {
+    const e = {};
+
+    if (!form.name.trim()) {
+      e.name = "Họ và tên không được để trống";
+    } else if (
+      form.name.length > 255 ||
+      !/^[\p{L}\s]+$/u.test(form.name.trim())
+    ) {
+      e.name = "Họ tên chỉ gồm chữ và khoảng trắng, tối đa 255 ký tự";
+    }
+
+    if (!["Nam", "Nữ"].includes(form.gender)) {
+      e.gender = "Vui lòng chọn giới tính";
+    }
+
+    if (!/^0[0-9]{9}$/.test(form.phone)) {
+      e.phone = "SĐT phải gồm 10 số và bắt đầu bằng 0";
+    }
+
+    if (!form.address.trim()) {
+      e.address = "Địa chỉ không được để trống";
+    } else if (form.address.length > 255) {
+      e.address = "Địa chỉ tối đa 255 ký tự";
+    }
+
+    if (avatar) {
+      if (!["image/jpeg", "image/png"].includes(avatar.type)) {
+        e.avatar = "Chỉ chấp nhận ảnh JPG hoặc PNG";
+      } else if (avatar.size > 5 * 1024 * 1024) {
+        e.avatar = "Ảnh không được vượt quá 5 MB";
+      }
+    }
+
+    setErrors(e);
+    return Object.keys(e).length === 0;
+  };
+
+  const save = async () => {
+    if (!validate()) return;
+
+    if (!window.confirm("Bạn có chắc chắn muốn lưu thay đổi?")) {
+      return;
+    }
+
+    const payload = new FormData();
+    Object.entries(form).forEach(([key, value]) => {
+      payload.append(key, value);
+    });
+
+    if (avatar) payload.append("avatar", avatar);
+
+    setSaving(true);
+    try {
+      const result = await run(() =>
+        api("profile/update/", payload)
+      );
+
+      if (result?.ok) {
+        onSave(result.user);
+      }
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const field = (label, key, element, required = true) => (
+    <div className="edit-profile-field">
+      <label>
+        {label} {required && <span className="required">*</span>}
+      </label>
+      <div>
+        {element}
+        {errors[key] && (
+          <small className="field-error">{errors[key]}</small>
+        )}
+      </div>
+    </div>
+  );
+
+  return (
+    <div className="edit-profile-form">
+      <h2>Chỉnh sửa tài khoản</h2>
+
+      <div className="edit-avatar">
+        <strong>Ảnh đại diện <span className="required">*</span></strong>
+
+        {preview ? (
+          <img src={preview} alt="Ảnh đại diện" />
+        ) : (
+          <div className="avatar-placeholder">👤</div>
+        )}
+
+        <label className="upload-button">
+          Tải lên ảnh
+          <input
+            type="file"
+            accept=".jpg,.jpeg,.png"
+            hidden
+            onChange={e => {
+              const file = e.target.files?.[0];
+              if (!file) return;
+
+              setAvatar(file);
+              setErrors(prev => ({ ...prev, avatar: "" }));
+              setPreview(URL.createObjectURL(file));
+            }}
+          />
+        </label>
+
+        {errors.avatar && (
+          <small className="field-error">{errors.avatar}</small>
+        )}
+      </div>
+
+      {field("Họ và tên", "name",
+        <input
+          value={form.name}
+          maxLength={255}
+          onChange={e => change("name", e.target.value)}
+        />
+      )}
+
+      {field("Giới tính", "gender",
+        <select
+          value={form.gender}
+          onChange={e => change("gender", e.target.value)}
+        >
+          <option value="">Chọn giới tính</option>
+          <option value="Nam">Nam</option>
+          <option value="Nữ">Nữ</option>
+        </select>
+      )}
+
+      {field("Số điện thoại", "phone",
+        <input
+          value={form.phone}
+          maxLength={10}
+          inputMode="numeric"
+          onChange={e => change("phone", e.target.value)}
+        />
+      )}
+
+      {field("Email", "email",
+        <input value={user.email || ""} disabled readOnly />
+      )}
+
+      {field("Mã người dùng", "code",
+        <input value={user.code || ""} disabled readOnly />,
+        false
+      )}
+
+      {field("Địa chỉ", "address",
+        <textarea
+          value={form.address}
+          maxLength={255}
+          onChange={e => change("address", e.target.value)}
+        />,
+      )}
+
+      {field("Vai trò", "role",
+        <input value={user.role_label || ""} disabled readOnly />,
+        false
+      )}
+
+      <div className="edit-profile-actions">
+        <button type="button" onClick={onCancel} disabled={saving}>
+          Hủy
+        </button>
+        <button
+          type="button"
+          className="primary"
+          onClick={save}
+          disabled={saving}
+        >
+          {saving ? "Đang lưu..." : "Lưu"}
+        </button>
+      </div>
+    </div>
+  );
+}
+
+
+const roleMenus = [
+  {
+    key: "accounts",
+    icon: "♙",
+    title: "Quản lý Tài khoản",
+    roles: ["QLCN", "QLLH"],
+  },
+  {
+    key: "class-group",
+    icon: "♧",
+    title: "Quản lý Lớp học",
+    roles: ["QLCN", "QLLH", "GV", "HV"],
+    children: [
+      {
+        key: "courses",
+        title: "Quản lý khóa học",
+        icon: "▣",
+        roles: ["QLCN"],
+      },
+      {
+        key: "shifts",
+        title: "Quản lý ca học",
+        icon: "◷",
+        roles: ["QLCN"],
+      },
+      {
+        key: "classes",
+        title: "Quản lý danh sách lớp học",
+        icon: "♧",
+        roles: ["QLCN", "QLLH", "GV"],
+      },
+      {
+        key: "schedules",
+        title: "Quản lý lịch học",
+        icon: "▦",
+        roles: ["QLCN", "QLLH", "GV", "HV"],
+      },
+    ],
+  },
+  {
+    key: "assignments",
+    icon: "▤",
+    title: "Quản lý Bài tập",
+    roles: ["QLCN", "QLLH", "GV", "HV"],
+  },
+  {
+    key: "grades",
+    icon: "▧",
+    title: "Quản lý Điểm",
+    roles: ["QLCN", "QLLH", "GV", "HV"],
+  },
+  {
+    key: "learning",
+    icon: "⌁",
+    title: "Quản lý Dữ liệu Học tập",
+    roles: ["QLCN","QLLH", "HV"],
+  },
+];
+
 function App() {
   const [user, U] = useState(undefined),
     [section, S] = useState("home"),
@@ -35,6 +296,17 @@ function App() {
     [toast, T] = useState(""),
     [modal, M] = useState(null),
     [refresh, R] = useState(0);
+    
+const [expandedMenus, setExpandedMenus] = useState({});
+const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+
+function toggleMenu(title) {
+  setExpandedMenus(prev => ({
+    ...prev,
+    [title]: !prev[title],
+  }));
+}
+
   useEffect(() => {
     api("auth/session/")
       .then((d) => U(d.user))
@@ -71,35 +343,122 @@ function App() {
         toast={toast}
       />
     );
-  const visible = sections.filter(([_, key]) => {
-    if (["allocations", "submissions", "comments"].includes(key)) return false;
-    if (user.role === "HV") return !["accounts", "exceptions", "enrollments", "courses", "shifts"].includes(key);
-    return true;
-  }).map(([icon, key, name]) => [icon, key,
-    key === "assignments" && user.role === "HV" ? "Bài tập được giao" : name]);
+
+  const visibleMenus = roleMenus
+    .filter(menu => menu.roles.includes(user.role))
+    .map(menu => ({
+      ...menu,
+      children: menu.children?.filter(child =>
+        child.roles.includes(user.role)
+      ),
+    }));
+
   return (
     <div className="app">
-      <aside>
-        <Logo />
-        <nav>
-          {visible.map(([icon, key, name]) => (
-            <button
-              key={key}
-              className={section === key ? "selected" : ""}
-              onClick={() => {
-                S(key);
+
+<aside className={sidebarCollapsed ? "sidebar-collapsed" : ""}>
+  <div className="sidebar-logo">
+    {!sidebarCollapsed && <Logo />}
+    <button
+      type="button"
+      className="sidebar-toggle"
+      onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
+      title="Thu gọn / Mở rộng menu"
+    >
+      ☰
+    </button>
+  </div>
+
+  <nav className="sidebar-nav">
+    {visibleMenus.map(menu => {
+      const children = menu.children || [];
+      const isGroup = children.length > 0;
+      const isActive = isGroup
+        ? children.some(child => child.key === section)
+        : menu.key === section;
+
+      const isExpanded =
+        expandedMenus[menu.title] ?? isActive;
+
+      return (
+        <div className="sidebar-menu-group" key={menu.title}>
+          <button
+            type="button"
+            className={
+              "sidebar-parent " +
+              (isActive ? "selected " : "")
+            }
+            title={menu.title}
+            onClick={() => {
+              if (isGroup) {
+                toggleMenu(menu.title);
+              } else {
+                S(menu.key);
                 E("");
-              }}
-            >
-              <span>{icon}</span>
-              {name}
-            </button>
-          ))}
-        </nav>
-        <button className="logout" onClick={() => run(signout)}>
-          ⇥　Đăng xuất
-        </button>
-      </aside>
+              }
+            }}
+          >
+            <span className="sidebar-icon">{menu.icon}</span>
+
+            {!sidebarCollapsed && (
+              <>
+                <span className="sidebar-label">
+                  {menu.title}
+                </span>
+                {isGroup && (
+                  <span className="sidebar-chevron">
+                    {isExpanded ? "⌃" : "⌄"}
+                  </span>
+                )}
+              </>
+            )}
+          </button>
+
+          {isGroup && isExpanded && !sidebarCollapsed && (
+            <div className="sidebar-submenu">
+              {children.map((child, index) => (
+                <button
+                  type="button"
+                  key={`${child.key}-${index}`}
+                  className={
+                    "sidebar-child " +
+                    (section === child.key ? "selected" : "")
+                  }
+                  onClick={() => {
+                    S(child.key);
+                    E("");
+                  }}
+                >
+
+<span className="sidebar-child-icon">
+  {child.icon}
+</span>
+<span className="sidebar-child-label">
+  {child.title}
+</span>
+
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
+      );
+    })}
+  </nav>
+
+  <button
+    type="button"
+    className="logout"
+    onClick={() => {
+      if (window.confirm("Bạn có chắc chắn muốn đăng xuất không?")) {
+        run(signout);
+      }
+    }}
+  >
+    ⇥ {!sidebarCollapsed && "Đăng xuất"}
+  </button>
+</aside>
+
       <main>
         <header>
           <h1>{visible.find((x) => x[1] === section)?.[2]}</h1>
@@ -186,13 +545,37 @@ function App() {
                     </React.Fragment>
                   ))}
                 </dl>
+
+              <div style={{ display: "flex", gap: "12px", marginTop: "20px" }}>
+                <button
+                  className="primary"
+                  onClick={() => M({ type: "edit-profile" })}
+                >
+                  ✎ Chỉnh sửa
+                </button>
+
                 <button
                   className="primary"
                   onClick={() => M({ type: "password" })}
                 >
                   Đổi mật khẩu
                 </button>
+              </div>
+
               </>
+
+            ) : modal.type === "edit-profile" ? (
+              <EditProfile
+                user={user}
+                run={run}
+                onCancel={() => M({ type: "profile" })}
+                onSave={(updatedUser) => {
+                  U(updatedUser);
+                  M({ type: "profile" });
+                  notify("Cập nhật thông tin tài khoản thành công!");
+                }}
+              />
+              
             ) : modal.type === "password" ? (
               <Password
                 run={run}
@@ -590,6 +973,111 @@ function Empty({ text = "Chưa có dữ liệu" }) {
     </div>
   );
 }
+
+function GradeDetail({ data, onBack }) {
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(10);
+
+  const total = data.grades.length;
+  const pages = Math.max(1, Math.ceil(total / pageSize));
+  const visible = data.grades.slice(
+    (page - 1) * pageSize,
+    page * pageSize
+  );
+
+  return (
+    <div className="grade-detail-page">
+      <h2>QUẢN LÝ ĐIỂM</h2>
+
+      <button className="grade-back" onClick={onBack}>
+        ← Quay lại danh sách
+      </button>
+
+      <h3>Thông tin chi tiết điểm</h3>
+
+      <div className="tablewrap">
+        <table>
+          <thead>
+            <tr>
+              <th>STT</th>
+              <th>Họ và tên</th>
+              <th>Mã học viên</th>
+              <th>Loại bài kiểm tra</th>
+              <th>Điểm listening</th>
+              <th>Điểm speaking</th>
+              <th>Điểm reading</th>
+              <th>Điểm writing</th>
+              <th>Điểm overall</th>
+            </tr>
+          </thead>
+
+          <tbody>
+            {visible.map((g, index) => (
+              <tr key={g.id}>
+                <td>{(page - 1) * pageSize + index + 1}</td>
+                <td>{data.student_name}</td>
+                <td>{data.student_code}</td>
+                <td>{g.exam_type}</td>
+                <td>{g.listening}</td>
+                <td>{g.speaking}</td>
+                <td>{g.reading}</td>
+                <td>{g.writing}</td>
+                <td><strong>{g.overall}</strong></td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+
+      {total === 0 && <Empty text="Chưa có điểm kiểm tra" />}
+
+      <div className="grade-detail-pagination">
+        <label>
+          Hiển thị{" "}
+          <select
+            value={pageSize}
+            onChange={e => {
+              setPageSize(Number(e.target.value));
+              setPage(1);
+            }}
+          >
+            <option value={10}>10</option>
+            <option value={20}>20</option>
+            <option value={50}>50</option>
+          </select>
+          {" "}bản ghi trên mỗi trang
+        </label>
+
+        <div>
+          <button
+            disabled={page === 1}
+            onClick={() => setPage(p => p - 1)}
+          >
+            ‹
+          </button>
+
+          {Array.from({ length: pages }, (_, i) => (
+            <button
+              key={i}
+              className={page === i + 1 ? "primary" : ""}
+              onClick={() => setPage(i + 1)}
+            >
+              {i + 1}
+            </button>
+          ))}
+
+          <button
+            disabled={page === pages}
+            onClick={() => setPage(p => p + 1)}
+          >
+            ›
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function Records({ kind, user, run, notify, refresh, reload, open }) {
   const [result, D] = useState(null),
     [q, Q] = useState(""),
@@ -622,9 +1110,18 @@ function Records({ kind, user, run, notify, refresh, reload, open }) {
       reload();
     });
   }
+
   async function show(id) {
-    await run(async () => DE(await api(`${kind}/${id}/`)));
+    await run(async () => {
+      if (kind === "grades") {
+        const data = await api(`grades/${id}/detail/`);
+        DE({ gradePage: true, ...data });
+      } else {
+        DE(await api(`${kind}/${id}/`));
+      }
+    });
   }
+
   function exportRows() {
     const headers = [
       ...result.columns,
@@ -637,7 +1134,18 @@ function Records({ kind, user, run, notify, refresh, reload, open }) {
     saveCSV(kind + ".csv", [headers, ...rows]);
     notify("Đã xuất dữ liệu của trang hiện tại.");
   }
-  if (!result) return <p>Đang tải danh sách…</p>;
+
+if (!result) return <p>Đang tải danh sách…</p>;
+
+if (kind === "grades" && detail?.gradePage) {
+  return (
+    <GradeDetail
+      data={detail}
+      onBack={() => DE(null)}
+    />
+  );
+}
+
   const rows = result.rows;
   return (
     <>
@@ -788,7 +1296,9 @@ function Records({ kind, user, run, notify, refresh, reload, open }) {
                   ))}
                   <td>
                     <div className="rowactions">
-                      <button onClick={() => show(r.id)}>◎ Chi tiết</button>
+                      <button onClick={() => show(r.id)}>
+                        {kind === "grades" ? "◎ Xem chi tiết" : "◎ Chi tiết"}
+                      </button>
                       {result.can_write && (
                         <>
                           {kind === "assignments" && (

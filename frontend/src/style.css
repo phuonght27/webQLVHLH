@@ -825,3 +825,496 @@ nav button {
 .checkrow input {
   width: auto;
 }
+
+.edit-profile-form {
+  width: 100%;
+  max-width: 480px;
+}
+
+.edit-profile-form h2 {
+  color: #182c62;
+  margin-bottom: 22px;
+}
+
+.edit-avatar {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 24px;
+}
+
+.edit-avatar strong {
+  align-self: flex-start;
+}
+
+.edit-avatar img,
+.avatar-placeholder {
+  width: 82px;
+  height: 82px;
+  border-radius: 50%;
+  object-fit: cover;
+}
+
+.avatar-placeholder {
+  display: grid;
+  place-items: center;
+  background: #f0f2f8;
+  font-size: 34px;
+}
+
+.upload-button {
+  padding: 8px 14px;
+  border: 1px solid #d9dff0;
+  border-radius: 6px;
+  color: #2848aa;
+  cursor: pointer;
+}
+
+.edit-profile-field {
+  display: grid;
+  grid-template-columns: 110px minmax(0, 1fr);
+  gap: 12px;
+  align-items: start;
+  margin-bottom: 17px;
+}
+
+.edit-profile-field label {
+  padding-top: 11px;
+  font-weight: 600;
+  font-size: 13px;
+  color: #253765;
+}
+
+.edit-profile-field input,
+.edit-profile-field select,
+.edit-profile-field textarea {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 11px;
+  border: 1px solid #d7dce7;
+  border-radius: 6px;
+  font: inherit;
+}
+
+.edit-profile-field textarea {
+  min-height: 64px;
+  resize: vertical;
+}
+
+.edit-profile-field input:disabled {
+  background: #f1f1f1;
+  color: #777;
+  cursor: not-allowed;
+}
+
+.required,
+.field-error {
+  color: #e34c4c;
+}
+
+.field-error {
+  display: block;
+  margin-top: 5px;
+  font-size: 12px;
+}
+
+.edit-profile-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  margin-top: 24px;
+}
+
+.grade-detail-page {
+  width: 100%;
+}
+
+.grade-detail-page h2 {
+  color: #1a2c65;
+  font-size: 23px;
+  margin-bottom: 22px;
+}
+
+.grade-detail-page h3 {
+  color: #1a2c65;
+  font-size: 15px;
+  margin: 24px 0 12px;
+}
+
+.grade-back {
+  background: white;
+  border: 1px solid #dce2f5;
+  border-radius: 6px;
+  padding: 10px 16px;
+  color: #304fc3;
+  cursor: pointer;
+}
+
+.grade-detail-page table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+
+.grade-detail-page th {
+  background: #f1f4fd;
+  color: #253b80;
+  padding: 13px 9px;
+}
+
+.grade-detail-page td {
+  padding: 13px 9px;
+  border-bottom: 1px solid #e8ebf4;
+  text-align: center;
+}
+
+.grade-detail-page td strong {
+  color: #243cb5;
+}
+
+.grade-detail-pagination {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 15px;
+  margin-top: 18px;
+  flex-wrap: wrap;
+}
+
+.grade-detail-pagination button {
+  margin-left: 5px;
+  padding: 7px 12px;
+}
+
+.grade-detail-pagination select {
+  margin: 0 6px;
+}
+
+/* Sidebar theo giao diện The Toeic Lab */
+
+.app > aside {
+  background: linear-gradient(180deg, #193761, #10264a);
+  color: #fff;
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+  width: 245px;
+  flex-shrink: 0;
+  transition: width 0.2s ease;
+}
+
+.sidebar-logo {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 12px;
+}
+
+.sidebar-toggle {
+  background: transparent;
+  border: none;
+  color: white;
+  cursor: pointer;
+  font-size: 20px;
+}
+
+.sidebar-nav {
+  flex: 1;
+  overflow-y: auto;
+  padding: 8px;
+}
+
+.sidebar-menu-group {
+  margin-bottom: 5px;
+}
+
+.sidebar-parent,
+.sidebar-child {
+  display: flex;
+  align-items: center;
+  width: 100%;
+  border: none;
+  color: #e8f0ff;
+  background: transparent;
+  cursor: pointer;
+  text-align: left;
+  border-radius: 6px;
+}
+
+.sidebar-parent {
+  gap: 10px;
+  padding: 12px;
+  font-size: 13px;
+}
+
+.sidebar-parent:hover,
+.sidebar-child:hover {
+  background: rgba(255,255,255,0.1);
+}
+
+.sidebar-parent.selected,
+.sidebar-child.selected {
+  background: #376fe1;
+  color: #fff;
+}
+
+.sidebar-icon {
+  font-size: 18px;
+  min-width: 22px;
+}
+
+.sidebar-label {
+  flex: 1;
+}
+
+.sidebar-chevron {
+  margin-left: auto;
+}
+
+.sidebar-submenu {
+  padding: 4px 0 5px 27px;
+}
+
+.sidebar-child {
+  padding: 10px 8px;
+  font-size: 12px;
+  margin: 2px 0;
+}
+
+.app > aside.sidebar-collapsed {
+  width: 66px;
+}
+
+.sidebar-collapsed .sidebar-logo {
+  justify-content: center;
+}
+
+.sidebar-collapsed .sidebar-parent {
+  justify-content: center;
+}
+
+.app > aside .logout {
+  margin-top: auto;
+  color: #fff;
+}
+
+/* ===== FIX SIDEBAR THE TOEIC LAB ===== */
+
+/* Sidebar cố định bên trái */
+.app > aside {
+  position: fixed;
+  top: 0;
+  left: 0;
+  bottom: 0;
+  width: 245px;
+  height: 100vh;
+  min-height: 0;
+  padding: 12px 10px 18px;
+  background: #19345d;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  z-index: 100;
+  box-sizing: border-box;
+}
+
+/* Nội dung chính không bị sidebar che */
+.app > main {
+  margin-left: 245px;
+  width: calc(100% - 245px);
+  min-width: 0;
+}
+
+/* Khu vực logo */
+.app > aside .sidebar-logo {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 5px 20px;
+  flex-shrink: 0;
+}
+
+.app > aside .sidebar-logo .logo {
+  padding: 0;
+  margin: 0;
+}
+
+/* Danh sách menu */
+.app > aside .sidebar-nav {
+  display: block;
+  flex: 1;
+  min-height: 0;
+  margin-top: 5px;
+  padding: 0;
+  overflow-y: auto;
+  overflow-x: hidden;
+}
+
+/* Nút menu cha */
+.app > aside .sidebar-nav .sidebar-parent {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 12px 10px;
+  margin: 3px 0;
+  border: 0;
+  border-radius: 7px;
+  background: transparent;
+  color: #e8efff;
+  font-size: 13px;
+  text-align: left;
+  white-space: normal;
+  cursor: pointer;
+}
+
+/* Ghi đè CSS nav button span cũ */
+.app > aside .sidebar-nav .sidebar-parent .sidebar-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 23px;
+  min-width: 23px;
+  font-size: 18px;
+  flex-shrink: 0;
+}
+
+.app > aside .sidebar-nav .sidebar-parent .sidebar-label {
+  display: block;
+  flex: 1;
+  width: auto;
+  min-width: 0;
+  font-size: 13px;
+  line-height: 1.4;
+  text-align: left;
+}
+
+.app > aside .sidebar-nav .sidebar-parent .sidebar-chevron {
+  display: block;
+  width: auto;
+  min-width: 0;
+  margin-left: auto;
+  font-size: 15px;
+  flex-shrink: 0;
+}
+
+/* Menu con */
+.app > aside .sidebar-nav .sidebar-submenu {
+  display: flex;
+  flex-direction: column;
+  padding: 3px 0 6px 30px;
+}
+
+.app > aside .sidebar-nav .sidebar-child {
+  display: block;
+  width: 100%;
+  padding: 10px 8px;
+  margin: 2px 0;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  color: #d6e3fa;
+  font-size: 12px;
+  line-height: 1.4;
+  text-align: left;
+  white-space: normal;
+  cursor: pointer;
+}
+
+/* Hiệu ứng rê chuột */
+.app > aside .sidebar-nav .sidebar-parent:hover,
+.app > aside .sidebar-nav .sidebar-child:hover {
+  background: #294c82;
+}
+
+/* Mục đang được chọn */
+.app > aside .sidebar-nav .sidebar-parent.selected,
+.app > aside .sidebar-nav .sidebar-child.selected {
+  background: #376fe1;
+  color: white;
+  box-shadow: none;
+}
+
+/* Nút đăng xuất nằm cuối */
+.app > aside .logout {
+  position: static;
+  width: 100%;
+  margin-top: auto;
+  padding: 14px 12px;
+  color: #fff;
+  text-align: left;
+  cursor: pointer;
+}
+
+/* Thu gọn sidebar */
+.app > aside.sidebar-collapsed {
+  width: 66px;
+}
+
+.app:has(> aside.sidebar-collapsed) > main {
+  margin-left: 66px;
+  width: calc(100% - 66px);
+}
+
+/* Điều chỉnh màn hình nhỏ */
+@media (max-width: 650px) {
+  .app > aside {
+    width: 210px;
+  }
+
+  .app > main {
+    margin-left: 210px;
+    width: calc(100% - 210px);
+  }
+
+  .app > aside .sidebar-nav {
+    display: block;
+  }
+
+  .app > aside .sidebar-nav .sidebar-parent {
+    width: 100%;
+  }
+
+  .app > aside.sidebar-collapsed {
+    width: 66px;
+  }
+}
+
+/* Menu con trong Quản lý Lớp học */
+.app > aside .sidebar-nav .sidebar-submenu {
+  padding: 2px 0 7px 10px;
+}
+
+.app > aside .sidebar-nav .sidebar-child {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  width: 100%;
+  padding: 10px 8px;
+  font-size: 12px;
+  text-align: left;
+}
+
+.app > aside .sidebar-nav .sidebar-child-icon {
+  display: inline-flex;
+  justify-content: center;
+  align-items: center;
+  flex: 0 0 20px;
+  width: 20px;
+  font-size: 17px;
+}
+
+.app > aside .sidebar-nav .sidebar-child-label {
+  display: block;
+  flex: 1;
+  min-width: 0;
+  width: auto;
+  font-size: 12px;
+  line-height: 1.4;
+}
+
+.app > aside .sidebar-nav .sidebar-child.selected {
+  background: #477cf0;
+  color: #fff;
+}
