@@ -1150,7 +1150,7 @@ function GradeDetail({ data, onBack }) {
 
       <h3>Thông tin chi tiết điểm</h3>
 
-      <div className="tablewrap">
+      <div className="tablewrap grade-detail-table">
         <table>
           <thead>
             <tr>
@@ -1302,6 +1302,7 @@ if (kind === "grades" && detail?.gradePage) {
 }
 
   const accountMode = kind === "accounts";
+  const gradeMode = kind === "grades";
   const accountColumns = result.columns || [];
   const accountCell = (r, label) => {
     const index = accountColumns.findIndex(c => c.toLowerCase().includes(label.toLowerCase()));
@@ -1315,7 +1316,18 @@ if (kind === "grades" && detail?.gradePage) {
   const rows = result.rows;
   return (
     <>
-      {accountMode ? (
+      {gradeMode ? (
+        <div className="grade-management-toolbar">
+          <div className="grade-management-search">
+            <button type="button" onClick={() => document.getElementById("grade-filter-panel")?.classList.toggle("is-open")}>☷ &nbsp; Lọc</button>
+            <form onSubmit={e => { e.preventDefault(); SQ(q); P(1); }}>
+              <input value={q} onChange={e => Q(e.target.value)} placeholder="⌕  Nhập từ khóa tìm kiếm (Họ tên, Mã học viên, ...)" />
+              <button className="primary" type="submit">Tìm kiếm</button>
+            </form>
+          </div>
+          {result.can_write && <button className="primary" type="button" onClick={() => open({type:"bulk",kind})}>Nhập điểm</button>}
+        </div>
+      ) : accountMode ? (
         <div className="account-management-toolbar">
           <div className="account-management-search">
             <button type="button" onClick={() => document.getElementById("account-filter-panel")?.classList.toggle("is-open")}>☷ &nbsp; Lọc</button>
@@ -1344,7 +1356,7 @@ if (kind === "grades" && detail?.gradePage) {
           </div>
         </div>
       )}
-      <div id={accountMode ? "account-filter-panel" : undefined} className={accountMode ? "filters account-management-filters" : "filters"}>
+      <div id={accountMode ? "account-filter-panel" : gradeMode ? "grade-filter-panel" : undefined} className={accountMode ? "filters account-management-filters" : gradeMode ? "filters grade-management-filters" : "filters"}>
         {result.filters?.map((f) => (
           <label key={f.name}>
             {f.label}
@@ -1395,7 +1407,7 @@ if (kind === "grades" && detail?.gradePage) {
           × Xóa bộ lọc
         </button>
       </div>
-      <div className={accountMode ? "card list account-management-table" : "card list"}>
+      <div className={accountMode ? "card list account-management-table" : gradeMode ? "card list grade-management-table" : "card list"}>
         <div className="tablewrap">
           <table>
             <thead>
@@ -1447,7 +1459,7 @@ if (kind === "grades" && detail?.gradePage) {
                     </td>
                   ))}
                   {!accountMode && <td>
-                    <div className="rowactions">
+                    <div className={gradeMode ? "rowactions grade-management-actions" : "rowactions"}>
                       <button onClick={() => show(r.id)}>
                         {kind === "grades" ? "◎ Xem chi tiết" : "◎ Chi tiết"}
                       </button>
