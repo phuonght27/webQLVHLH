@@ -1,0 +1,26 @@
+# Review Render's displayed price before creating this paid service and disk.
+services:
+  - type: web
+    name: webqlvhlh
+    runtime: python
+    branch: main
+    plan: starter
+    autoDeployTrigger: commit
+    buildCommand: bash scripts/render-build.sh
+    startCommand: bash scripts/render-start.sh
+    healthCheckPath: /healthz/
+    disk:
+      name: academy-data
+      mountPath: /var/data
+      sizeGB: 1
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.12.8
+      - key: NODE_VERSION
+        value: 22.16.0
+      - key: DJANGO_SETTINGS_MODULE
+        value: config.render_settings
+      - key: DJANGO_SECRET_KEY
+        generateValue: true
+      - key: DJANGO_DATA_DIR
+        value: /var/data/academy
