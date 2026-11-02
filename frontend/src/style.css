@@ -1870,3 +1870,56 @@ nav button {
   .account-management-search form { flex-basis: 100%; }
   .account-management-search input { min-width: 0; }
 }
+
+
+/* Grade management: screenshot-inspired list and detail */
+.grade-management-toolbar,
+.grade-management-search,
+.grade-management-search form {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.grade-management-toolbar { justify-content: space-between; margin-bottom: 16px; flex-wrap: wrap; }
+.grade-management-search { flex: 1 1 430px; min-width: 0; }
+.grade-management-search form { flex: 1; min-width: 0; margin: 0; }
+.grade-management-search input {
+  flex: 1; min-width: 140px; height: 39px; background: #fff;
+  border: 1px solid #e0e7f3; font-size: 12px; border-radius: 5px;
+}
+.grade-management-toolbar button { min-height: 39px; font-size: 12px; font-weight: 600; white-space: nowrap; }
+.grade-management-search > button { border: 1px solid #ccd8f6; color: #3156d9; }
+.grade-management-toolbar .primary { background: #3156e9; border-color: #3156e9; color: white; }
+.grade-management-filters { display: none; }
+.grade-management-filters.is-open { display: flex; }
+.grade-management-table { border: 1px solid #e8edf7; border-radius: 8px; overflow: hidden; background: white; }
+.grade-management-table .tablewrap { overflow-x: auto; }
+.grade-management-table table { min-width: 920px; width: 100%; border-collapse: collapse; font-size: 12px; }
+.grade-management-table th { background: #f6f8fc; color: #283d79; font-weight: 700; font-size: 11px; padding: 14px 12px; }
+.grade-management-table td { padding: 13px 12px; border-bottom: 1px solid #edf1f7; color: #344778; line-height: 1.5; vertical-align: middle; }
+.grade-management-table tbody tr:hover { background: #f8faff; }
+.grade-management-table .grade-management-actions { display: flex; align-items: center; flex-wrap: nowrap; gap: 5px; }
+.grade-management-table .grade-management-actions button { padding: 7px 9px; border-radius: 5px; font-size: 11px; white-space: nowrap; color: #3559d6; border: 1px solid #dbe4fb; background: #fff; }
+.grade-management-table .grade-management-actions button:nth-child(2) { color: #3155e7; }
+.grade-management-table .grade-management-actions button:nth-child(3) { color: #e0932b; border-color: #f5e6d0; }
+.grade-management-table .grade-management-actions button.danger { color: #df5b59; border-color: #f5d9d8; }
+.grade-management-table .pagination { padding: 12px 16px; }
+.grade-detail-page { width: 100%; }
+.grade-detail-page h2 { margin: 0 0 24px; font-size: 22px; color: #20366d; }
+.grade-detail-page .grade-back { margin-bottom: 22px; padding: 10px 14px; color: #3558bd; border: 1px solid #d9e3f6; background: #fff; border-radius: 6px; }
+.grade-detail-page h3 { margin: 0 0 12px; font-size: 15px; color: #263b76; }
+.grade-detail-table { border: 1px solid #e5eaf4; border-radius: 8px; overflow-x: auto; background: #fff; }
+.grade-detail-table table { min-width: 850px; width: 100%; border-collapse: collapse; font-size: 12px; }
+.grade-detail-table th { padding: 14px 12px; background: #f3f6fc; color: #263b77; font-weight: 700; text-align: center; border: 1px solid #e9edf5; }
+.grade-detail-table td { padding: 14px 12px; text-align: center; color: #344778; border: 1px solid #e9edf5; }
+.grade-detail-table td:last-child strong { color: #253eab; font-size: 13px; }
+.grade-detail-page .grade-detail-pagination { display: flex; align-items: center; justify-content: space-between; gap: 14px; flex-wrap: wrap; margin-top: 14px; }
+.grade-detail-pagination label { display: flex; flex-direction: row; align-items: center; gap: 8px; margin: 0; font-size: 12px; }
+.grade-detail-pagination select { width: auto; padding: 7px 9px; }
+.grade-detail-pagination > div { display: flex; gap: 7px; align-items: center; }
+.grade-detail-pagination button { min-width: 32px; padding: 7px 9px; }
+@media (max-width: 640px) {
+  .grade-management-search { flex-wrap: wrap; }
+  .grade-management-search form { flex-basis: 100%; }
+  .grade-management-search input { min-width: 0; }
+}
