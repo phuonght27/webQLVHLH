@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from "react";
 import { createRoot } from "react-dom/client";
 import "./style.css";
+import SidebarIcon from "./SidebarIcon";
+import "./sidebar-icons.css";
 import { api } from "./api";
 import Homework from "./Homework";
 const sections = [
@@ -365,7 +367,7 @@ function toggleMenu(title) {
       onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
       title="Thu gọn / Mở rộng menu"
     >
-      ☰
+      <SidebarIcon name="menu" />
     </button>
   </div>
 
@@ -398,7 +400,7 @@ function toggleMenu(title) {
               }
             }}
           >
-            <span className="sidebar-icon">{menu.icon}</span>
+            <span className="sidebar-icon"><SidebarIcon name={menu.key} /></span>
 
             {!sidebarCollapsed && (
               <>
@@ -406,8 +408,8 @@ function toggleMenu(title) {
                   {menu.title}
                 </span>
                 {isGroup && (
-                  <span className="sidebar-chevron">
-                    {isExpanded ? "⌃" : "⌄"}
+                  <span className={"sidebar-chevron" + (isExpanded ? " is-expanded" : "")}>
+                    <SidebarIcon name="chevron" />
                   </span>
                 )}
               </>
@@ -431,7 +433,7 @@ function toggleMenu(title) {
                 >
 
 <span className="sidebar-child-icon">
-  {child.icon}
+  <SidebarIcon name={child.key} />
 </span>
 <span className="sidebar-child-label">
   {child.title}
@@ -455,13 +457,13 @@ function toggleMenu(title) {
       }
     }}
   >
-    ⇥ {!sidebarCollapsed && "Đăng xuất"}
+    <SidebarIcon name="logout" /> {!sidebarCollapsed && "Đăng xuất"}
   </button>
 </aside>
 
       <main>
         <header>
-          <h1>{visible.find((x) => x[1] === section)?.[2]}</h1>
+          <h1>{sections.find((x) => x[1] === section)?.[2]}</h1>
           <button className="profile" onClick={() => M({ type: "profile" })}>
             <span className="avatar">{user.name?.split(" ").pop()?.[0]}</span>
             <span>
