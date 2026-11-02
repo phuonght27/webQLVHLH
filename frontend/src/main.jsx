@@ -645,6 +645,17 @@ function Auth({ user, onLogin, run, error, notify, toast }) {
     });
     B(false);
   }
+  if (user) {
+    return (
+      <FirstPasswordChange
+        run={run}
+        error={error}
+        toast={toast}
+        onLogin={onLogin}
+        notify={notify}
+      />
+    );
+  }
   return (
     <div className="auth">
       {toast && <div className="toast">{toast}</div>}
@@ -775,6 +786,94 @@ function Auth({ user, onLogin, run, error, notify, toast }) {
     </div>
   );
 }
+function FirstPasswordChange({ run, error, toast, onLogin, notify }) {
+  const [visible, setVisible] = useState({});
+  const [busy, setBusy] = useState(false);
+  const [validation, setValidation] = useState("");
+  const fields = [
+    ["old_password", "Mật khẩu hiện tại", "current-password"],
+    ["password", "Mật khẩu mới", "new-password"],
+    ["confirm_password", "Xác nhận mật khẩu", "new-password"],
+  ];
+
+  async function submit(e) {
+    e.preventDefault();
+    const data = Object.fromEntries(new FormData(e.currentTarget));
+    if (data.password.length < 10) {
+      setValidation("Mật khẩu mới phải có ít nhất 10 ký tự.");
+      return;
+    }
+    if (data.password !== data.confirm_password) {
+      setValidation("Mật khẩu xác nhận không khớp.");
+      return;
+    }
+    if (data.old_password === data.password) {
+      setValidation("Mật khẩu mới phải khác mật khẩu hiện tại.");
+      return;
+    }
+    setValidation("");
+    setBusy(true);
+    try {
+      await run(async () => {
+        await api("auth/password/", {
+          old_password: data.old_password,
+          password: data.password,
+        });
+        onLogin(null);
+        notify("Đã đổi mật khẩu. Vui lòng đăng nhập lại.");
+      });
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  return (
+    <div className="auth first-password-auth">
+      {toast && <div className="toast">{toast}</div>}
+      <Logo />
+      <form className="first-password-card" onSubmit={submit}>
+        <div className="first-password-notice" role="status">
+          <span className="first-password-warning" aria-hidden="true">!</span>
+          <div>
+            <strong>Bạn đang sử dụng mật khẩu tạm thời.</strong>
+            <p>Vui lòng đổi mật khẩu mới để tiếp tục sử dụng hệ thống.</p>
+          </div>
+        </div>
+        {(error || validation) && (
+          <div role="alert" className="alert">{validation || error}</div>
+        )}
+        {fields.map(([name, title, autocomplete]) => (
+          <label key={name} htmlFor={name} className="first-password-label">
+            {title}:
+            <span className="first-password-input">
+              <span className="first-password-lock" aria-hidden="true">♙</span>
+              <input
+                id={name}
+                name={name}
+                type={visible[name] ? "text" : "password"}
+                autoComplete={autocomplete}
+                minLength={name === "old_password" ? undefined : 10}
+                required
+              />
+              <button
+                type="button"
+                aria-label={visible[name] ? "Ẩn " + title : "Hiện " + title}
+                aria-pressed={!!visible[name]}
+                onClick={() => setVisible(v => ({ ...v, [name]: !v[name] }))}
+              >
+                {visible[name] ? "◉" : "◎"}
+              </button>
+            </span>
+          </label>
+        ))}
+        <button className="primary first-password-submit" type="submit" disabled={busy}>
+          {busy ? "Đang cập nhật…" : "Cập nhật"}
+        </button>
+      </form>
+    </div>
+  );
+}
+
 function Password({ run, done }) {
   return (
     <form
