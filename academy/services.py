@@ -85,14 +85,24 @@ def scoped(model, user):
     if model == Account:
         if user.is_superuser:
             return q
+
+        # Quản lý chi nhánh: xem QLLH, GV, HV
         if user.role == "QLCN":
-            return q.filter(Q(role__in=["QLLH", "GV"]) | Q(pk=user.pk))
+            return q.filter(
+                role__in=["QLLH", "GV", "HV"]
+            )
+
+        # Quản lý lớp học: chỉ xem học viên thuộc lớp mình
         if user.role == "QLLH":
             return q.filter(
-                Q(created_by=user)
-                | Q(enrollment__classroom__in=classes_for(user))
-                | Q(pk=user.pk)
+                role="HV",
+                enrollment__classroom__manager=user,
+                enrollment__deleted_at__isnull=True,
+                enrollment__classroom__deleted_at__isnull=True,
+                enrollment__left_at__isnull=True,
             ).distinct()
+
+        # Giáo viên và học viên: chỉ truy xuất tài khoản cá nhân
         return q.filter(pk=user.pk)
     if model in (Course, Shift, Room, ExamType, RetakeCriterion):
         return q
