@@ -92,14 +92,16 @@ def scoped(model, user):
                 role__in=["QLLH", "GV", "HV"]
             )
 
-        # Quản lý lớp học: chỉ xem học viên thuộc lớp mình
+        # QLLH sees students they created and students enrolled in their classes.
         if user.role == "QLLH":
-            return q.filter(
-                role="HV",
-                enrollment__classroom__manager=user,
-                enrollment__deleted_at__isnull=True,
-                enrollment__classroom__deleted_at__isnull=True,
-                enrollment__left_at__isnull=True,
+            return q.filter(role="HV").filter(
+                Q(created_by=user)
+                | Q(
+                    enrollment__classroom__manager=user,
+                    enrollment__deleted_at__isnull=True,
+                    enrollment__classroom__deleted_at__isnull=True,
+                    enrollment__left_at__isnull=True,
+                )
             ).distinct()
 
         # Giáo viên và học viên: chỉ truy xuất tài khoản cá nhân
