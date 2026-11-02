@@ -461,7 +461,13 @@ function toggleMenu(title) {
 
       <main>
         <header>
-          <h1>{visible.find((x) => x[1] === section)?.[2]}</h1>
+<h1>
+  {visibleMenus.find(menu => menu.key === section)?.title ||
+    visibleMenus
+      .flatMap(menu => menu.children || [])
+      .find(child => child.key === section)?.title ||
+    "Tổng quan"}
+</h1>
           <button className="profile" onClick={() => M({ type: "profile" })}>
             <span className="avatar">{user.name?.split(" ").pop()?.[0]}</span>
             <span>
