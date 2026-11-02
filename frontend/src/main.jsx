@@ -1301,55 +1301,50 @@ if (kind === "grades" && detail?.gradePage) {
   );
 }
 
+  const accountMode = kind === "accounts";
+  const accountColumns = result.columns || [];
+  const accountCell = (r, label) => {
+    const index = accountColumns.findIndex(c => c.toLowerCase().includes(label.toLowerCase()));
+    return index >= 0 ? r.values[index] : "";
+  };
+  const accountStatus = (r) => {
+    const values = [...r.values, ...Object.values(r.extra || {})];
+    return values.find(v => v === "Active" || v === "Inactive") || "Active";
+  };
+  const accountStatusColumn = accountColumns.findIndex(c => /trạng thái|status/i.test(c));
   const rows = result.rows;
   return (
     <>
-      <div className="toolbar">
-        <form
-          className="searchform"
-          onSubmit={(e) => {
-            e.preventDefault();
-            SQ(q);
-            P(1);
-          }}
-        >
-          <input
-            value={q}
-            onChange={(e) => Q(e.target.value)}
-            placeholder="⌕  Nhập mã, tên hoặc nội dung cần tìm…"
-          />
-          <button className="primary">Tìm</button>
-        </form>
-        <div className="actions">
-          {["accounts", "grades", "allocations"].includes(kind) &&
-            result.can_write && (
-              <button onClick={() => open({ type: "bulk", kind })}>
-                ⇧ Nhập hàng loạt
-              </button>
-            )}
-          <button onClick={exportRows}>⇩ Xuất CSV</button>
-          {["courses", "shifts", "classes", "schedules"].includes(kind) && (
-            <button
-              className={archived ? "primary" : ""}
-              onClick={() => {
-                A(!archived);
-                P(1);
-              }}
-            >
-              ▱ {archived ? "Đang lưu trữ" : "Lưu trữ"}
-            </button>
-          )}
-          {result.can_write && (
-            <button
-              className="primary"
-              onClick={() => open({ type: "edit", kind })}
-            >
-              ＋ Thêm mới
-            </button>
-          )}
+      {accountMode ? (
+        <div className="account-management-toolbar">
+          <div className="account-management-search">
+            <button type="button" onClick={() => document.getElementById("account-filter-panel")?.classList.toggle("is-open")}>☷ &nbsp; Lọc</button>
+            <form onSubmit={e => { e.preventDefault(); SQ(q); P(1); }}>
+              <input value={q} onChange={e => Q(e.target.value)} placeholder="⌕  Nhập từ khóa tìm kiếm (Họ tên, Mã người dùng, Địa chỉ, SĐT, Email)" />
+              <button className="primary" type="submit">Tìm kiếm</button>
+            </form>
+          </div>
+          <div className="account-management-buttons">
+            <button type="button" onClick={exportRows}>⇩ &nbsp; Xuất CSV</button>
+            {result.can_write && <button type="button" className="primary" onClick={() => open({type:"edit",kind})}>♙ &nbsp; Thêm tài khoản</button>}
+            {result.can_write && <button type="button" className="primary" onClick={() => open({type:"bulk",kind})}>♙ &nbsp; Tạo hàng loạt</button>}
+          </div>
         </div>
-      </div>
-      <div className="filters">
+      ) : (
+        <div className="toolbar">
+          <form className="searchform" onSubmit={e => { e.preventDefault(); SQ(q); P(1); }}>
+            <input value={q} onChange={e => Q(e.target.value)} placeholder="⌕  Nhập mã, tên hoặc nội dung cần tìm…" />
+            <button className="primary">Tìm</button>
+          </form>
+          <div className="actions">
+            {["accounts", "grades", "allocations"].includes(kind) && result.can_write && <button onClick={() => open({type:"bulk",kind})}>⇧ Nhập hàng loạt</button>}
+            <button onClick={exportRows}>⇩ Xuất CSV</button>
+            {["courses", "shifts", "classes", "schedules"].includes(kind) && <button className={archived ? "primary" : ""} onClick={() => { A(!archived); P(1); }}>▱ {archived ? "Đang lưu trữ" : "Lưu trữ"}</button>}
+            {result.can_write && <button className="primary" onClick={() => open({type:"edit",kind})}>＋ Thêm mới</button>}
+          </div>
+        </div>
+      )}
+      <div id={accountMode ? "account-filter-panel" : undefined} className={accountMode ? "filters account-management-filters" : "filters"}>
         {result.filters?.map((f) => (
           <label key={f.name}>
             {f.label}
@@ -1400,7 +1395,7 @@ if (kind === "grades" && detail?.gradePage) {
           × Xóa bộ lọc
         </button>
       </div>
-      <div className="card list">
+      <div className={accountMode ? "card list account-management-table" : "card list"}>
         <div className="tablewrap">
           <table>
             <thead>
@@ -1412,16 +1407,18 @@ if (kind === "grades" && detail?.gradePage) {
                 {Object.keys(result.rows[0]?.extra || {}).map((x) => (
                   <th key={x}>{x}</th>
                 ))}
-                <th>Thao tác</th>
+                {!accountMode && <th>Thao tác</th>}
               </tr>
             </thead>
             <tbody>
               {rows.map((r, i) => (
-                <tr key={r.id}>
+                <tr key={r.id} onClick={accountMode ? () => show(r.id) : undefined} className={accountMode ? "account-management-row" : undefined} title={accountMode ? "Nhấn để xem thông tin tài khoản" : undefined}>
                   <td>{(page - 1) * 10 + i + 1}</td>
                   {r.values.map((v, j) => (
                     <td key={j} className={j === 0 ? "emphasis" : ""}>
-                      {["Active", "Inactive"].includes(v) ? (
+                      {accountMode && ["Active", "Inactive"].includes(v) ? (
+                        <select className={"account-status-select " + (v === "Active" ? "is-active" : "is-inactive")} value={v} disabled={!result.can_write} aria-label="Trạng thái tài khoản" onClick={e => e.stopPropagation()} onChange={e => { e.stopPropagation(); act(r.id, "toggle"); }}><option value="Active">Active</option><option value="Inactive">Inactive</option></select>
+                      ) : ["Active", "Inactive"].includes(v) ? (
                         <span
                           className={
                             "badge " + (v === "Active" ? "green" : "red")
@@ -1449,7 +1446,7 @@ if (kind === "grades" && detail?.gradePage) {
                       </span>
                     </td>
                   ))}
-                  <td>
+                  {!accountMode && <td>
                     <div className="rowactions">
                       <button onClick={() => show(r.id)}>
                         {kind === "grades" ? "◎ Xem chi tiết" : "◎ Chi tiết"}
@@ -1526,7 +1523,7 @@ if (kind === "grades" && detail?.gradePage) {
                           </button>
                         )}
                     </div>
-                  </td>
+                  </td>}
                 </tr>
               ))}
             </tbody>
