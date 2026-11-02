@@ -485,6 +485,18 @@ def records(r, kind, pk=None):
                 selected = r.GET.get("filter_" + name)
                 if selected:
                     qs = qs.filter(**{name: selected})
+        if kind == "accounts":
+            filter_options.append({
+                "name": "role",
+                "label": "Vai trò",
+                "choices": [
+                    {"value": code, "label": label}
+                    for code, label in Account.ROLE
+                ],
+            })
+            selected_role = r.GET.get("filter_role", "")
+            if selected_role in dict(Account.ROLE):
+                qs = qs.filter(role=selected_role)
         search = r.GET.get("q", "").strip()[:200]
         # Search visible display columns including foreign key labels.
         objects = [
