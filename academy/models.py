@@ -47,7 +47,12 @@ class Account(AbstractUser):
         on_delete=models.PROTECT,
         related_name="created_accounts",
     )
-
+    avatar = models.ImageField(
+    "Ảnh đại diện",
+    upload_to="avatars/",
+    blank=True,
+    null=True
+    )
     def clean(self):
         super().clean()
         self.email = self.email.lower().strip()

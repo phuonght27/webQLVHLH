@@ -76,6 +76,7 @@ def user_data(u):
         "gender": u.gender,
         "phone": u.phone,
         "address": u.address,
+        "avatar": u.avatar.url if u.avatar else None,
         "must_change_password": u.must_change_password,
     }
 
@@ -353,8 +354,30 @@ def row(kind, o):
         }
     if kind == "enrollments":
         extra = {"Trạng thái": "Đã rời lớp" if o.left_at else "Đang học"}
+
+
     if kind == "grades":
-        extra = {"Overall": str(o.overall)}
+        enrollment = o.enrollment
+        classroom = enrollment.classroom
+        course = classroom.course
+        student = enrollment.student
+
+        return {
+            "id": o.pk,
+            "values": [
+                str(course.name),
+                str(student.full_name),
+                str(student.username),
+                str(classroom.code),
+                str(o.exam_type),
+            ],
+            "extra": {
+                "Điểm overall": str(o.overall),
+            },
+            "archived": bool(getattr(o, "archived_at", None)),
+        }
+
+
     if kind == "submissions":
         extra = {"Trạng thái": o.status}
     if kind == "retakes":
@@ -486,7 +509,21 @@ def records(r, kind, pk=None):
             ]
         page = max(1, int(r.GET.get("page", 1)))
         total = len(objects)
-        columns = [str(model._meta.get_field(x).verbose_name) for x in FIELDS[kind]]
+
+        if kind == "grades":
+            columns = [
+                "Tên khóa học",
+                "Họ và tên",
+                "Mã học viên",
+                "Mã lớp",
+                "Loại bài kiểm tra",
+            ]
+        else:
+            columns = [
+                str(model._meta.get_field(x).verbose_name)
+                for x in FIELDS[kind]
+            ]
+
         return JsonResponse(
             {
                 "title": TITLES[kind],
@@ -903,3 +940,110 @@ def progress(r):
                 }
             )
     return JsonResponse({"rows": output})
+
+@api
+@require_http_methods(["POST"])
+def update_profile(r):
+    blocked = guard(r)
+    if blocked is not None:
+        return blocked
+
+    u = r.user
+
+    # Chỉ nhận các trường được phép sửa.
+    u.full_name = r.POST.get("name", "").strip()
+    u.gender = r.POST.get("gender", "").strip()
+    u.phone = r.POST.get("phone", "").strip()
+    u.address = r.POST.get("address", "").strip()
+
+    avatar = r.FILES.get("avatar")
+
+    if avatar:
+        import os
+        from django.core.files.images import get_image_dimensions
+
+        ext = os.path.splitext(avatar.name)[1].lower()
+
+        if ext not in (".jpg", ".jpeg", ".png"):
+            raise ValidationError({
+                "avatar": "Chỉ chấp nhận ảnh JPG hoặc PNG."
+            })
+
+        if avatar.size > 5 * 1024 * 1024:
+            raise ValidationError({
+                "avatar": "Ảnh không được vượt quá 5 MB."
+            })
+
+        try:
+            width, height = get_image_dimensions(avatar)
+            if not width or not height:
+                raise ValueError()
+        except Exception:
+            raise ValidationError({
+                "avatar": "Tệp ảnh không hợp lệ."
+            })
+
+        u.avatar = avatar
+
+    # Kiểm tra tất cả quy tắc trong model.
+    u.full_clean()
+    u.save()
+
+    return JsonResponse({
+        "ok": True,
+        "message": "Cập nhật thông tin thành công.",
+        "user": user_data(u)
+    })
+
+@api
+@require_http_methods(["GET"])
+def grade_detail(r, grade_id):
+    blocked = guard(r)
+    if blocked is not None:
+        return blocked
+
+    # Chỉ tìm trong các bản ghi mà người dùng có quyền xem.
+    selected = (
+        scoped(Grade, r.user)
+        .filter(pk=grade_id, deleted_at=None)
+        .select_related("enrollment__student", "exam_type")
+        .first()
+    )
+
+    if selected is None:
+        raise Http404
+
+    enrollment = selected.enrollment
+
+    # Chỉ lấy điểm của học viên trong đúng lớp được chọn.
+    grades = (
+        scoped(Grade, r.user)
+        .filter(
+            enrollment=enrollment,
+            deleted_at=None,
+            archived_at=None,
+        )
+        .select_related("exam_type")
+        .order_by("exam_date", "pk")
+    )
+
+    items = [
+        {
+            "id": g.pk,
+            "exam_type": str(g.exam_type),
+            "listening": str(g.listening),
+            "speaking": str(g.speaking),
+            "reading": str(g.reading),
+            "writing": str(g.writing),
+            "overall": str(g.overall),
+        }
+        for g in grades
+    ]
+
+    return JsonResponse({
+        "student_name": enrollment.student.full_name,
+        "student_code": enrollment.student.username,
+        "classroom": str(enrollment.classroom),
+        "total": len(items),
+        "grades": items,
+    })
