@@ -1,35 +1,8 @@
 import React, { useState, useEffect } from "react";
 import { createRoot } from "react-dom/client";
 import "./style.css";
-let csrf = "";
-function formatError(value) {
-  if (typeof value === "string") return value;
-  if (Array.isArray(value)) return value.map(formatError).join(" ");
-  if (value && typeof value === "object")
-    return value.message || Object.values(value).map(formatError).join(" ");
-  return "Không thể thực hiện thao tác.";
-}
-async function api(path, body, method) {
-  const response = await fetch("/api/" + path, {
-    method: method || (body ? "POST" : "GET"),
-    credentials: "same-origin",
-    headers:
-      body instanceof FormData
-        ? { "X-CSRFToken": csrf }
-        : { "Content-Type": "application/json", "X-CSRFToken": csrf },
-    body: body
-      ? body instanceof FormData
-        ? body
-        : JSON.stringify(body)
-      : undefined,
-  });
-  const d = await response
-    .json()
-    .catch(() => ({ error: "Máy chủ không trả về dữ liệu hợp lệ." }));
-  if (!response.ok) throw new Error(formatError(d.error));
-  if (d.csrf) csrf = d.csrf;
-  return d;
-}
+import { api } from "./api";
+import Homework from "./Homework";
 const sections = [
   ["⌂", "home", "Trang chủ"],
   ["♙", "accounts", "Quản lý tài khoản"],
@@ -98,17 +71,12 @@ function App() {
         toast={toast}
       />
     );
-  const visible = sections.filter(([_, key]) =>
-    user.role === "HV"
-      ? ![
-          "accounts",
-          "exceptions",
-          "enrollments",
-          "courses",
-          "shifts",
-        ].includes(key)
-      : true,
-  );
+  const visible = sections.filter(([_, key]) => {
+    if (["allocations", "submissions", "comments"].includes(key)) return false;
+    if (user.role === "HV") return !["accounts", "exceptions", "enrollments", "courses", "shifts"].includes(key);
+    return true;
+  }).map(([icon, key, name]) => [icon, key,
+    key === "assignments" && user.role === "HV" ? "Bài tập được giao" : name]);
   return (
     <div className="app">
       <aside>
@@ -134,7 +102,7 @@ function App() {
       </aside>
       <main>
         <header>
-          <h1>{sections.find((x) => x[1] === section)?.[2]}</h1>
+          <h1>{visible.find((x) => x[1] === section)?.[2]}</h1>
           <button className="profile" onClick={() => M({ type: "profile" })}>
             <span className="avatar">{user.name?.split(" ").pop()?.[0]}</span>
             <span>
@@ -156,7 +124,9 @@ function App() {
           </div>
         )}
         <div className="content">
-          {section === "progress" ? (
+          {section === "assignments" ? (
+            <Homework user={user} notify={notify} refresh={refresh} open={M} />
+          ) : section === "progress" ? (
             <Progress run={run} />
           ) : ["home", "learning"].includes(section) ? (
             <Dashboard

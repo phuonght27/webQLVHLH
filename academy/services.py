@@ -111,6 +111,8 @@ def scoped(model, user):
         q = q.filter(enrollment__classroom__in=classes_for(user))
         if user.role == "HV":
             q = q.filter(enrollment__student=user)
+        elif model == Submission:
+            q = q.filter(submitted_at__isnull=False)
     if model in (Comment, SubmissionException):
         q = q.filter(submission__enrollment__classroom__in=classes_for(user))
         if user.role == "HV":

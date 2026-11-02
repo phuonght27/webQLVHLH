@@ -1,8 +1,13 @@
 from django.urls import path, re_path
 from django.views.generic import TemplateView
-from academy import views
+from academy import views, homework
 
 urlpatterns = [
+    path("api/homework/", homework.index),
+    path("api/homework/<int:pk>/", homework.detail),
+    path("api/homework/<int:pk>/submit/", homework.submit),
+    path("api/homework/<int:pk>/files/", homework.draft_files),
+    path("api/homework/<int:pk>/files/<int:file_id>/", homework.draft_files),
     path("api/auth/<str:action>/", views.auth),
     path("api/overview/", views.overview),
     path("api/progress/", views.progress),

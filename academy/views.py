@@ -508,6 +508,8 @@ def records(r, kind, pk=None):
         raise ValidationError("Yêu cầu đã được xử lý.")
     if kind == "submissions" and obj and timezone.now() > obj.allocation.deadline:
         raise ValidationError("Không thể sửa hoặc hủy bài sau hạn nộp.")
+    if kind == "submissions" and obj and obj.submitted_at and r.method == "PATCH":
+        raise ValidationError("Bài đã nộp. Hãy hủy nộp trước khi thay đổi bài làm.")
     with transaction.atomic():
         if r.method == "DELETE":
             if not obj:
@@ -587,6 +589,8 @@ def records(r, kind, pk=None):
                 target.edited = True
         if kind in ["comments", "exceptions"]:
             target.author = r.user
+            if not target.submission.submitted_at:
+                raise ValidationError("Học viên chưa xác nhận nộp bài.")
         if kind == "submissions":
             if target.enrollment.left_at or target.enrollment.deleted_at:
                 raise ValidationError("Học viên đã rời lớp.")
@@ -809,10 +813,8 @@ def upload(r, kind, pk):
     obj = scoped(MODELS[kind], r.user).filter(pk=pk, deleted_at=None).first()
     if not obj:
         raise Http404
-    if kind == "submissions" and (
-        not obj.submitted_at or timezone.now() > obj.allocation.deadline
-    ):
-        raise ValidationError("Bài nộp đã đóng hoặc bị hủy.")
+    if kind == "submissions":
+        raise ValidationError("Hãy thêm file nháp từ chi tiết bài tập trước khi xác nhận nộp.")
     file = r.FILES.get("file")
     if not file or file.size > 20 * 1024 * 1024:
         raise ValidationError("Tệp phải nhỏ hơn hoặc bằng 20 MB.")
