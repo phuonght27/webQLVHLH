@@ -2012,3 +2012,27 @@ table.compact-stt-table > tbody > tr > td:first-child {
 .grade-single-add input, .grade-single-add select { width: 100%; }
 .grade-single-add .grade-single-footer { text-align: right; margin-top: 24px; }
 @media(max-width:650px) { .grade-single-add .grade-single-info, .grade-single-add .grade-single-scores { grid-template-columns: 1fr 1fr; } }
+
+/* Single-student grade modal — screenshot reference */
+.modal:has(.grade-single-add) { width: min(550px, 96vw); max-width: 96vw; padding: 20px; }
+.grade-single-add { color: #334b8c; font-size: 12px; }
+.grade-single-add h2 { font-size: 18px; font-weight: 800; margin: 0 0 20px; color: #3545df; }
+.grade-single-add h3 { font-size: 13px; font-weight: 750; color: #3953bf; margin: 20px 0 14px; padding-top: 17px; border-top: 1px solid #e8ecf6; }
+.grade-single-add h3:first-of-type { border-top: 0; padding-top: 0; margin-top: 0; }
+.grade-single-add label { display: flex; flex-direction: column; gap: 8px; font-size: 11px; font-weight: 700; color: #3e5398; }
+.grade-single-add .grade-single-info { display: grid; grid-template-columns: 1.05fr 1.9fr .9fr; gap: 18px 22px; }
+.grade-single-add .grade-single-name { grid-column: span 2; }
+.grade-single-add input, .grade-single-add select { box-sizing: border-box; min-width: 0; width: 100%; height: 35px; border: 1px solid #e2e8f6; border-radius: 5px; padding: 8px 10px; font-size: 11px; color: #354a94; }
+.grade-single-add .grade-single-info input { background: #f7f8fc; }
+.grade-single-add .grade-single-exam { width: min(275px, 100%); }
+.grade-single-add em { color: #e44848; font-style: normal; }
+.grade-single-add .grade-single-scores { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 14px; margin-top: 22px; }
+.grade-single-add .grade-single-footer { display: flex; justify-content: flex-end; margin-top: 24px; }
+.grade-single-add .grade-single-footer button { min-width: 90px; padding: 10px 15px; border-radius: 5px; background: #3545e8; color: #fff; }
+@media (max-width: 550px) { .grade-single-add .grade-single-info { grid-template-columns: 1fr 1fr; gap: 12px; } .grade-single-add .grade-single-course { grid-column: span 2; } .grade-single-add .grade-single-scores { grid-template-columns: 1fr 1fr; } }
+
+.grade-management-buttons { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.grade-single-add .grade-single-selectors { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-bottom: 18px; }
+.grade-single-add .grade-single-selectors label { min-width: 0; }
+.grade-single-add .grade-single-selectors select:disabled { background: #f5f6fb; color: #8894ad; }
+@media(max-width:550px) { .grade-single-add .grade-single-selectors { grid-template-columns: 1fr; } }
