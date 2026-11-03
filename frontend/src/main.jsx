@@ -1156,7 +1156,7 @@ function GradeDetail({ data, onBack }) {
       <h3>Thông tin chi tiết điểm</h3>
 
       <div className="tablewrap grade-detail-table">
-        <table>
+        <table className="compact-stt-table">
           <thead>
             <tr>
               <th>STT</th>
@@ -1440,7 +1440,7 @@ if (kind === "grades" && detail?.gradePage) {
       </div>}
       <div className={accountMode ? "card list account-management-table" : gradeMode ? "card list grade-management-table" : "card list"}>
         <div className="tablewrap">
-          <table>
+          <table className="compact-stt-table">
             <thead>
               <tr>
                 <th>STT</th>

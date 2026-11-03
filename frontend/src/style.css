@@ -1976,3 +1976,29 @@ nav button {
   outline: 2px solid #4267eb;
   outline-offset: -2px;
 }
+
+/* Compact STT column in the grade management list only. */
+.grade-management-table table th:first-child,
+.grade-management-table table td:first-child {
+  width: 48px;
+  min-width: 48px;
+  max-width: 48px;
+  box-sizing: border-box;
+  padding-left: 6px;
+  padding-right: 6px;
+  text-align: center;
+  white-space: nowrap;
+}
+
+/* Uniform compact STT column across list and detail tables with STT headers. */
+table.compact-stt-table > thead > tr > th:first-child,
+table.compact-stt-table > tbody > tr > td:first-child {
+  width: 48px !important;
+  min-width: 48px !important;
+  max-width: 48px !important;
+  padding-left: 6px !important;
+  padding-right: 6px !important;
+  text-align: center !important;
+  white-space: nowrap;
+  box-sizing: border-box;
+}
