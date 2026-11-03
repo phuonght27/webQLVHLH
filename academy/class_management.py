@@ -203,7 +203,7 @@ def manage(r, kind, pk=None):
     if kind == "schedules":
         qs = Session.objects.filter(classroom__in=classes_for(r.user), schedule__deleted_at=None).select_related(
             "classroom__course", "classroom__teacher", "classroom__manager", "shift", "room", "schedule")
-        qs = qs.filter(Q(schedule__archived_at__isnull=False) | Q(classroom__archived_at__isnull=False)) if archived else qs.filter(schedule__archived_at=None, classroom__archived_at=None)
+        qs = qs.filter(Q(archived_at__isnull=False) | Q(schedule__archived_at__isnull=False) | Q(classroom__archived_at__isnull=False)) if archived else qs.filter(archived_at=None, schedule__archived_at=None, classroom__archived_at=None)
         if pk:
             schedule = Schedule.objects.filter(pk=pk, classroom__in=classes_for(r.user), deleted_at=None).select_related("classroom", "shift").first()
             if not schedule:
@@ -218,7 +218,7 @@ def manage(r, kind, pk=None):
             "start": s.shift.start.strftime("%H:%M"), "end": s.shift.end.strftime("%H:%M"),
             "room": s.room.name, "room_id": s.room_id, "teacher": s.classroom.teacher.full_name,
             "manager": s.classroom.manager.full_name, "cancelled": s.cancelled,
-            "past": taught(s), "archived": bool(s.schedule.archived_at or s.classroom.archived_at)} for s in qs.order_by("date", "shift__start", "pk")]
+            "past": taught(s), "archived": bool(s.archived_at or s.schedule.archived_at or s.classroom.archived_at)} for s in qs.order_by("date", "shift__start", "pk")]
         return JsonResponse({"rows": rows})
     raise Http404
 
@@ -231,6 +231,38 @@ def lookup(model, value, field, **filters):
     if not obj:
         raise ValidationError({field: "Vui lòng chọn dữ liệu hợp lệ đang hoạt động."})
     return obj
+
+
+@api
+@require_http_methods(["PATCH"])
+def session_visibility(r, pk):
+    blocked = guard(r)
+    if blocked is not None:
+        return blocked
+    if r.user.role != "QLLH":
+        return denied()
+    action = data(r).get("_action")
+    if action not in ["archive", "restore"]:
+        raise ValidationError("Thao tác lưu trữ không hợp lệ.")
+    with transaction.atomic():
+        session = Session.objects.select_for_update().select_related("schedule", "classroom__course", "shift").filter(
+            pk=pk, classroom__manager=r.user, classroom__deleted_at=None, schedule__deleted_at=None).first()
+        if not session:
+            raise Http404
+        if session.classroom.archived_at:
+            raise ValidationError("Lớp học đang lưu trữ. Hãy khôi phục lớp học trước.")
+        # Rows archived by the previous group-level button retain their hidden
+        # state individually. Restore only the clicked row, never its siblings.
+        schedule = Schedule.objects.select_for_update().get(pk=session.schedule_id)
+        if schedule.archived_at:
+            Session.objects.filter(schedule=schedule, archived_at=None).update(archived_at=schedule.archived_at)
+            schedule.archived_at = None
+            schedule.save(update_fields=["archived_at"])
+            sync_manager_schedule(schedule, list(schedule.weekdays.values_list("weekday", flat=True)))
+        session.archived_at = timezone.now() if action == "archive" else None
+        session.save(update_fields=["archived_at"])
+        audit(r.user, action + "_session", session, {"session_id": session.pk, "schedule_id": session.schedule_id})
+    return JsonResponse({"ok": True, "id": session.pk})
 
 
 def parse_date(value, field):

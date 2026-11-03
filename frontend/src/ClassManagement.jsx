@@ -56,7 +56,7 @@ export default function ClassManagement({ kind, user, notify }) {
   async function perform() {
     setBusy(true); setError("");
     try {
-      await api(endpoint(action.kind || kind, action.id), action.action ? { _action: action.action } : null, action.action ? "PATCH" : "DELETE");
+      await api(action.endpoint || endpoint(action.kind || kind, action.id), action.action ? { _action: action.action } : null, action.action ? "PATCH" : "DELETE");
       setAction(null); notify("Đã cập nhật dữ liệu thành công."); await load();
     } catch (e) { setError(e.message); setAction(null); }
     finally { setBusy(false); }
@@ -67,9 +67,10 @@ export default function ClassManagement({ kind, user, notify }) {
     return <div className="cm-row-actions">
       {kind === "classes" && <button onClick={async () => { try { setDetail(await api(endpoint("classes", row.id))); showHistory(false); } catch (e) { setError(e.message); } }}>◉ Xem chi tiết</button>}
       {!archived && kind !== "shifts" && <button disabled={(kind === "classes" && row.status === "Đã kết thúc") || (kind === "schedules" && row.past)} title={row.past ? "Buổi đã diễn ra không được sửa" : ""} onClick={() => openEditor(row)}>✎ Chỉnh sửa</button>}
-      <button className={!archived && catalogue && !row.used ? "danger" : ""} onClick={() => setAction({ id,
+      <button className={!archived && catalogue && !row.used ? "danger" : ""} onClick={() => setAction({ id: kind === "schedules" ? row.id : id,
+        endpoint: kind === "schedules" ? `class-management/sessions/${row.id}/visibility/` : undefined,
         action: archived ? "restore" : !catalogue || row.used ? "archive" : null,
-        message: archived ? "Khôi phục dữ liệu đã lưu trữ?" : !catalogue || row.used ? "Ẩn dữ liệu khỏi danh sách đang hoạt động? Lịch sử và bài tập được giữ lại." : "Bạn có chắc chắn muốn xóa dữ liệu chưa sử dụng này?" })}>{archived ? "↶ Khôi phục" : !catalogue || row.used ? "◉ Ẩn" : "▤ Xóa"}</button>
+        message: kind === "schedules" ? `${archived ? "Khôi phục" : "Chỉ ẩn"} Buổi ${row.number} · ${row.classroom} · ${displayDate(row.date)}? Các buổi khác, bài tập và điểm không thay đổi.` : archived ? "Khôi phục dữ liệu đã lưu trữ?" : !catalogue || row.used ? "Ẩn dữ liệu khỏi danh sách đang hoạt động? Lịch sử và bài tập được giữ lại." : "Bạn có chắc chắn muốn xóa dữ liệu chưa sử dụng này?" })}>{archived ? "↶ Khôi phục" : !catalogue || row.used ? "◉ Ẩn" : "▤ Xóa"}</button>
     </div>;
   }
   return <div className="class-management">

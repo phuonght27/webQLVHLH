@@ -246,6 +246,8 @@ class Session(models.Model):
     shift = models.ForeignKey(Shift, on_delete=models.PROTECT)
     room = models.ForeignKey(Room, on_delete=models.PROTECT)
     cancelled = models.BooleanField(default=False)
+    # Calendar visibility is independent from cancellation/learning records.
+    archived_at = models.DateTimeField(null=True, blank=True)
 
     class Meta:
         constraints = [

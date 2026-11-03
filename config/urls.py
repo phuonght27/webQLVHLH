@@ -7,6 +7,7 @@ from academy import views, homework, submission_updates
 from academy import class_management
 
 urlpatterns = [
+    path("api/class-management/sessions/<int:pk>/visibility/", class_management.session_visibility),
     path("api/class-management/options/", class_management.options),
     path("api/class-management/<str:kind>/", class_management.manage),
     path("api/class-management/<str:kind>/<int:pk>/", class_management.manage),

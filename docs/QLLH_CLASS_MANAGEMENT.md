@@ -49,8 +49,27 @@ không đánh lại số buổi đã diễn ra hoặc khi có tham chiếu học
 Buổi loại khỏi lịch được đánh dấu hủy. Ẩn/khôi phục lớp/lịch không xóa học viên,
 bài nộp hay điểm. Không seed/reset/ghi đè database của người dùng khi cập nhật.
 
-Không đổi model và không có migration mới. Kiểm tra gồm test backend toàn bộ
+Phần giao diện lớp ban đầu không đổi model; phần lưu trữ từng buổi bổ sung migration 0005 như dưới đây. Kiểm tra gồm test backend toàn bộ
 vai trò, nghiệp vụ âm/dương, giao dịch/rollback, lịch trùng, lịch sử/ID buổi,
 phân quyền endpoint cũ/mới và xác nhận mật khẩu QLLH. Kiểm tra trình duyệt trực
 tiếp trên database thử riêng cho QLCN/QLLH: danh mục, tạo lớp và thành viên,
 hủy xác nhận giữ form, xóa/thêm lại học viên, tạo/sửa lịch, form mật khẩu và mobile.
+
+## Lưu trữ từng buổi học
+
+Nút Ẩn/Khôi phục ở từng dòng lịch dùng **ID Session của dòng**, không dùng
+ID Schedule (cấu hình lịch lặp). Gọi PATCH
+`/api/class-management/sessions/<session_id>/visibility/` với `_action` là
+`archive` hoặc `restore`. Chỉ QLLH phụ trách lớp được gọi endpoint này.
+
+Migration `0005_session_archived_at` bổ sung trạng thái hiển thị riêng cho từng
+buổi, cần chạy `python manage.py migrate`. Ẩn buổi không hủy buổi, không đổi
+số buổi, bài tập, điểm, danh sách lớp hoặc các buổi khác. Khi sửa cấu hình
+lịch, trạng thái ẩn riêng vẫn được giữ. Các màn vai trò khác tiếp tục đọc
+buổi học theo nghiệp vụ cũ, không bị thay đổi do thao tác ẩn dòng của QLLH.
+
+Với nhóm đã bị lưu trữ bằng nút cũ, khi khôi phục một dòng, các dòng khác
+được giữ trạng thái lưu trữ riêng và chỉ dòng được chọn xuất hiện trở lại.
+Lịch lặp được phục hồi có kiểm tra trùng lịch để gỡ trạng thái hủy các buổi
+tương lai do thao tác lưu trữ nhóm cũ. Nếu cả lớp đang lưu trữ thì cần khôi
+phục lớp trước, không tự khôi phục lớp từ một dòng buổi học.
