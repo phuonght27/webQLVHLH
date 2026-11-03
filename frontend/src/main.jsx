@@ -1371,9 +1371,10 @@ if (kind === "grades" && detail?.gradePage) {
           return <div className="grade-filter-field" key={f.name}>
             <label>{f.label}</label>
             {f.multiple ? <details className="grade-filter-multi">
-              <summary>{selected.length ? `Đã chọn ${selected.length}` : "Tất cả"} <span>⌄</span></summary>
+              <summary>{selected.length ? choices.filter(c => selected.includes(c.value)).map(c => c.label).join(", ") || `Đã chọn ${selected.length}` : "Tất cả"} <span className="grade-filter-chevron">⌄</span></summary>
               <div className="grade-filter-options">
-                {choices.map(c => <label key={c.value}><input type="checkbox" checked={selected.includes(c.value)} onChange={e => {
+                <button type="button" className="grade-filter-all" onClick={() => { FL(p => ({ ...p, [f.name]: "" })); P(1); }}>Tất cả</button>
+                {choices.map(c => <label key={c.value} className={selected.includes(c.value) ? "is-selected" : ""}><input type="checkbox" checked={selected.includes(c.value)} onChange={e => {
                   const next = e.target.checked ? [...selected, c.value] : selected.filter(v => v !== c.value);
                   FL(p => ({ ...p, [f.name]: next.join(",") })); P(1);
                 }} />{c.label}</label>)}

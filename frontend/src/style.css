@@ -1950,3 +1950,14 @@ nav button {
 .grade-filter-options label { display: flex; align-items: center; gap: 9px; padding: 8px; font-size: 12px; cursor: pointer; }
 .grade-filter-options input { width: auto; margin: 0; }
 .grade-filter-options label:hover { background: #f1f5ff; }
+
+/* Make multi-select dropdowns visually consistent with the course selector. */
+.grade-advanced-filters .grade-filter-multi { width: 100%; position: relative; }
+.grade-advanced-filters .grade-filter-multi summary { min-height: 40px; display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 9px 12px; font-size: 14px; font-weight: 400; line-height: 20px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.grade-advanced-filters .grade-filter-multi summary .grade-filter-chevron { flex-shrink: 0; margin-left: auto; font-size: 15px; }
+.grade-advanced-filters .grade-filter-options { top: calc(100% + 1px); padding: 0; max-height: 220px; border-radius: 2px; }
+.grade-advanced-filters .grade-filter-options label { display: flex !important; flex-direction: row !important; justify-content: flex-start !important; align-items: center !important; width: 100%; min-height: 36px; margin: 0 !important; padding: 7px 12px !important; gap: 10px; font-size: 14px !important; font-weight: 400 !important; text-align: left !important; color: #253b75; cursor: pointer; }
+.grade-advanced-filters .grade-filter-options label input[type="checkbox"] { appearance: auto; -webkit-appearance: checkbox; flex: 0 0 auto; display: inline-block; width: 16px !important; height: 16px !important; margin: 0 !important; padding: 0 !important; }
+.grade-advanced-filters .grade-filter-options label.is-selected { background: #edf3ff; }
+.grade-advanced-filters .grade-filter-options .grade-filter-all { display: block; width: 100%; min-height: 36px; padding: 7px 12px; border: 0; border-radius: 0; background: #fff; color: #253b75; text-align: left; font-size: 14px; font-weight: 400; cursor: pointer; }
+.grade-advanced-filters .grade-filter-options .grade-filter-all:hover { background: #edf3ff; }
