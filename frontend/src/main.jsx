@@ -545,7 +545,7 @@ function toggleMenu(title) {
             {modal.type === "grade-entry" ? (
               <GradeEntry notify={notify} done={() => { M(null); R(x => x + 1); }} />
             ) : modal.type === "grade-single-add" ? (
-              <GradeSingleAdd gradeId={modal.id} notify={notify} done={() => { M(null); R(x => x + 1); }} />
+              <GradeSingleAdd notify={notify} done={() => { M(null); R(x => x + 1); }} />
             ) : modal.type === "allocate" ? (
               <AllocationEditor
                 assignment={modal.id}
@@ -1334,7 +1334,7 @@ if (kind === "grades" && detail?.gradePage) {
               <button className="primary" type="submit">Tìm kiếm</button>
             </form>
           </div>
-          {result.can_write && <button className="primary" type="button" onClick={() => open({type:"grade-entry"})}>Nhập điểm</button>}
+          {result.can_write && <div className="grade-management-buttons"><button className="primary" type="button" onClick={() => open({type:"grade-entry"})}>Nhập điểm</button><button className="primary" type="button" onClick={() => open({type:"grade-single-add"})}>＋ Thêm điểm</button></div>}
         </div>
       ) : accountMode ? (
         <div className="account-management-toolbar">
@@ -1499,7 +1499,6 @@ if (kind === "grades" && detail?.gradePage) {
                       </button>
                       {result.can_write && (
                         <>
-                          {kind === "grades" && <button onClick={() => open({ type: "grade-single-add", id: r.id })}>＋ Thêm điểm</button>}
                           {kind === "assignments" && (
                             <button
                               onClick={() =>
