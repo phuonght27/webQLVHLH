@@ -1989,3 +1989,16 @@ nav button {
   text-align: center;
   white-space: nowrap;
 }
+
+/* Uniform compact STT column across list and detail tables with STT headers. */
+table.compact-stt-table > thead > tr > th:first-child,
+table.compact-stt-table > tbody > tr > td:first-child {
+  width: 48px !important;
+  min-width: 48px !important;
+  max-width: 48px !important;
+  padding-left: 6px !important;
+  padding-right: 6px !important;
+  text-align: center !important;
+  white-space: nowrap;
+  box-sizing: border-box;
+}
