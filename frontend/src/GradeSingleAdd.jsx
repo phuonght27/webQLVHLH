@@ -1,6 +1,5 @@
 import React, { useEffect, useState } from "react";
 import { api } from "./api";
-import "./grade-single-add.css";
 
 const skills = ["listening", "speaking", "reading", "writing"];
 const today = () => new Date().toLocaleDateString("en-CA");
