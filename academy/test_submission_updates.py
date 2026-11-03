@@ -204,3 +204,32 @@ class SubmissionUpdateTests(TestCase):
         self.assertFalse(Attachment.objects.exists())
         self.assertFalse(SubmissionUpdate.objects.exists())
         self.assertFalse(any(p.is_file() for p in self.root.rglob("*")))
+
+    def test_teacher_marks_existing_work_invalid_with_history(self):
+        submitted = timezone.now() - timedelta(days=1)
+        sub = Submission.objects.create(allocation=self.allocation,enrollment=self.member,content="Work",submitted_at=submitted)
+        response = self.client.post(self.url,{"reason":"Tệp sai nội dung đề bài","status":"invalid"})
+        self.assertEqual(response.status_code,200,response.content)
+        sub.refresh_from_db(); self.assertTrue(sub.invalid); self.assertEqual(sub.submitted_at,submitted)
+        self.assertEqual(response.json()["status"],"Không hợp lệ")
+        record=SubmissionUpdate.objects.get(); self.assertEqual(record.next_status,"Không hợp lệ")
+        self.assertEqual(record.previous_status,"Đã nộp")
+        self.client.force_login(self.student)
+        self.assertEqual(self.client.get(f"/api/homework/{self.allocation.pk}/").json()["submission"]["status"],"Không hợp lệ")
+
+    def test_invalid_requires_actual_work_and_reason(self):
+        self.assertEqual(self.client.post(self.url,{"reason":"Sai bài","status":"invalid"}).status_code,400)
+        self.assertFalse(Submission.objects.exists()); self.assertFalse(SubmissionUpdate.objects.exists())
+        self.assertEqual(self.client.post(self.url,{"reason":"","status":"invalid","work_file":self.pdf()}).status_code,400)
+        self.assertFalse(Submission.objects.exists())
+        response=self.client.post(self.url,{"reason":"Sai bài","status":"invalid","work_file":self.pdf()})
+        self.assertEqual(response.status_code,200,response.content)
+        self.assertTrue(Submission.objects.get().invalid)
+        self.assertEqual(self.client.post(self.url,{"reason":"Sai bài","status":"arbitrary"}).status_code,400)
+
+    def test_manager_cannot_mark_invalid(self):
+        self.client.force_login(self.manager)
+        self.assertFalse(self.client.get(self.url).json()["can_mark_invalid"])
+        response=self.client.post(self.url,{"reason":"Sai bài","status":"invalid","work_file":self.pdf()})
+        self.assertEqual(response.status_code,403)
+        self.assertFalse(Submission.objects.exists()); self.assertFalse(SubmissionUpdate.objects.exists())

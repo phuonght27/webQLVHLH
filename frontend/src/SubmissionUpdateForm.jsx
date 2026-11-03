@@ -29,6 +29,7 @@ function UpdateFileArea({ label, inputId, file, onChange, disabled, error }) {
 
 export default function SubmissionUpdateForm({ row, close, saved, statusLabels, statusTones }) {
   const [detail, setDetail] = useState(null), [reason, setReason] = useState("");
+  const [status, setStatus] = useState("keep");
   const [evidence, setEvidence] = useState(null), [work, setWork] = useState(null);
   const [errors, setErrors] = useState({}), [error, setError] = useState(""), [busy, setBusy] = useState(false);
   const reasonInput = useRef(null);
@@ -54,6 +55,7 @@ export default function SubmissionUpdateForm({ row, close, saved, statusLabels, 
     setBusy(true); setError("");
     try {
       const payload = new FormData(); payload.append("reason", reason.trim());
+      if (detail.can_mark_invalid) payload.append("status", status);
       if (evidence) payload.append("evidence", evidence);
       if (work) payload.append("work_file", work);
       await api(endpoint, payload); await saved();
@@ -70,6 +72,10 @@ export default function SubmissionUpdateForm({ row, close, saved, statusLabels, 
       <div className="submission-update-row"><span>Buổi học</span><div className="submission-update-readonly">{detail.session}</div></div>
       <div className="submission-update-row"><span>Deadline bài tập</span><div className="submission-update-readonly">{detail.deadline}</div></div>
       <div className="submission-update-row"><span>Trạng thái hiện tại</span><div><span className={`progress-status ${statusTones[detail.status] || "blue"}`}>{statusLabels[detail.status] || detail.status}</span></div></div>
+      {detail.can_mark_invalid && <div className="submission-update-row"><label htmlFor="submission-update-status">Trạng thái cập nhật</label><div><select id="submission-update-status" value={status} disabled={busy} onChange={e => setStatus(e.target.value)}>
+        <option value="keep">Giữ trạng thái hiện tại / tính theo thời điểm nộp</option>
+        <option value="invalid">Không hợp lệ</option>
+      </select>{status === "invalid" && <small>Đánh dấu bài làm không hợp lệ. Vui lòng ghi rõ lý do bên dưới.</small>}</div></div>}
       <div className="submission-update-row reason"><label htmlFor="submission-update-reason">Lý do cập nhật <em>*</em></label><div>
         <textarea ref={reasonInput} id="submission-update-reason" maxLength={500} required value={reason} disabled={busy}
           placeholder={'Nhập lý do cập nhật\n(VD: Học viên gửi bài qua Zalo sau deadline, ốm có lý do...)'}
@@ -80,7 +86,7 @@ export default function SubmissionUpdateForm({ row, close, saved, statusLabels, 
       <UpdateFileArea label="Tệp bài làm" inputId="submission-update-work" file={work} onChange={value => choose("work", value)} disabled={busy} error={errors.work} />
       {!!detail.files.length && <div className="submission-update-row"><span>Bài làm hiện có</span><ul className="submission-update-existing">{detail.files.map(file => <li key={file.id}><a href={`/api/files/${file.id}/`}>{file.name}</a></li>)}</ul></div>}
       <div className="submission-update-actions"><button type="button" disabled={busy} onClick={close}>Hủy</button><button className="primary" disabled={busy || !reason.trim() || !!errors.evidence || !!errors.work}>{busy ? "Đang lưu…" : "Xác nhận"}</button></div>
-      <p className="submission-update-note">Lưu ý: Nếu chỉ nhập lý do hoặc minh chứng mà không tải tệp bài làm, trạng thái nộp bài không thay đổi. Khi có tệp bài làm, hệ thống ghi nhận thời điểm nộp mới; bài nộp sau deadline được tính “Nộp muộn”. Quyết định “Không hợp lệ” đã có vẫn được giữ nguyên.</p>
+      <p className="submission-update-note">Lưu ý: Giáo viên có thể chọn “Không hợp lệ” cho bài đã nộp và phải nhập lý do. Nếu giữ trạng thái hiện tại và chỉ nhập lý do hoặc minh chứng, trạng thái nộp bài không thay đổi. Khi có tệp bài làm, hệ thống ghi nhận thời điểm nộp mới; bài nộp sau deadline được tính “Nộp muộn”. Quyết định “Không hợp lệ” đã có vẫn được giữ nguyên.</p>
     </>}
   </form></div>;
 }

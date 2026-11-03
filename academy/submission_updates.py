@@ -75,8 +75,14 @@ def update_submission(r, allocation_id, enrollment_id):
             "assignment": allocation.assignment.title,
             "deadline": timezone.localtime(allocation.deadline).strftime("%d/%m/%Y %H:%M"),
             "status": current_status(allocation, sub),
+            "can_mark_invalid": r.user.role == "GV",
             "files": files_for(submission=sub) if sub else [],
         })
+    requested_status = r.POST.get("status", "keep")
+    if requested_status not in ["keep", "invalid"]:
+        raise ValidationError("Trạng thái cập nhật không hợp lệ.")
+    if requested_status == "invalid" and r.user.role != "GV":
+        return denied()
     reason = r.POST.get("reason", "").strip()
     if not reason or len(reason) > 500:
         raise ValidationError("Lý do cập nhật bắt buộc, tối đa 500 ký tự.")
@@ -94,6 +100,8 @@ def update_submission(r, allocation_id, enrollment_id):
             sub = Submission.objects.select_for_update().filter(allocation=allocation, enrollment=enrollment).first()
             if sub and sub.deleted_at:
                 raise ValidationError("Bài nộp đã bị xóa, không thể cập nhật.")
+            if requested_status == "invalid" and not (sub and sub.submitted_at) and not work_file:
+                raise ValidationError("Chỉ được đánh dấu Không hợp lệ khi học viên đã nộp bài hoặc có tệp bài làm được ghi nhận.")
             previous = current_status(allocation, sub)
             record = SubmissionUpdate(allocation=allocation, enrollment=enrollment, author=r.user,
                 reason=reason, previous_status=previous)
@@ -110,6 +118,9 @@ def update_submission(r, allocation_id, enrollment_id):
                 # An invalid moderation decision is never silently lifted here.
                 sub.submitted_at = timezone.now()
                 sub.save(update_fields=["submitted_at", "updated_at"])
+            if requested_status == "invalid":
+                sub.invalid = True
+                sub.save(update_fields=["invalid", "updated_at"])
             if evidence:
                 record.evidence_name, record.evidence_size = evidence.name, evidence.size
                 name = secrets.token_hex(16) + Path(evidence.name).suffix.lower()
