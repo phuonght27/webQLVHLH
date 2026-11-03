@@ -1976,3 +1976,16 @@ nav button {
   outline: 2px solid #4267eb;
   outline-offset: -2px;
 }
+
+/* Compact STT column in the grade management list only. */
+.grade-management-table table th:first-child,
+.grade-management-table table td:first-child {
+  width: 48px;
+  min-width: 48px;
+  max-width: 48px;
+  box-sizing: border-box;
+  padding-left: 6px;
+  padding-right: 6px;
+  text-align: center;
+  white-space: nowrap;
+}
