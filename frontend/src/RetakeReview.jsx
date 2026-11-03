@@ -42,7 +42,7 @@ export default function RetakeReview() {
     ["Điểm thi thực tế", null, "điểm"],
   ];
   return <section className="retake-review">
-    <header className="retake-heading"><div><span className="retake-eyebrow">QUẢN LÝ DỮ LIỆU HỌC TẬP</span><h2>Xét yêu cầu học lại</h2><p>Tra cứu học viên và tổng hợp thông tin phục vụ xét điều kiện học lại.</p></div><span className="retake-role">Quản lý lớp học</span></header>
+    <div className="retake-heading"><h2>Xét duyệt yêu cầu học lại của học viên</h2></div>
     <div className="retake-panel"><div className="retake-panel-title"><span className="retake-step">01</span><div><h3>Thông tin học viên</h3><p>Nhập mã học viên để tự động điền thông tin liên quan.</p></div></div>
       <div className="retake-fields">
         <label>Mã học viên <em>*</em><input autoComplete="off" value={form.studentCode} onChange={e => {setForm(f=>({...f,studentCode:e.target.value,classCode:""}));}} placeholder="Ví dụ: HV001" /></label>
