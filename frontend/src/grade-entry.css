@@ -1,0 +1,7 @@
+.modal:has(.grade-entry) { width: min(1200px, 96vw); max-width: 96vw; }
+.grade-entry-scroll { overflow-x: auto; }
+.grade-entry table { min-width: 950px; }
+.grade-entry td input { width: 70px; min-width: 60px; padding: 8px 4px; }
+.grade-entry-selectors { display: flex; gap: 20px; }
+.grade-entry-selectors label { flex: 1; }
+.grade-entry-footer { display: flex; justify-content: flex-end; gap: 12px; margin-top: 20px; }
