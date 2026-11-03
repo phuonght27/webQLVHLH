@@ -262,6 +262,8 @@ def form_for(kind, user, payload=None, instance=None):
                     ).distinct()
             if name == "manager" and user.role == "QLLH":
                 field.queryset = Account.objects.filter(pk=user.pk)
+            if field.queryset.model == Submission and user.role == "GV":
+                field.queryset = field.queryset.filter(allocation__assignment__teacher=user)
             if name == "session":
                 field.queryset = field.queryset.filter(
                     cancelled=False, date__lte=timezone.localdate()
@@ -418,8 +420,16 @@ def records(r, kind, pk=None):
         return mutate(r, kind, pk)
     if kind not in MODELS:
         raise Http404
+    if r.user.role == "QLCN" and kind in ["assignments", "allocations", "comments", "exceptions"] and r.method != "GET":
+        return denied()
     model = MODELS[kind]
     qs = scoped(model, r.user)
+    if r.user.role == "GV":
+        if kind == "allocations":
+            qs = qs.filter(assignment__teacher=r.user)
+        elif kind in ["submissions", "comments", "exceptions"]:
+            prefix = "" if kind == "submissions" else "submission__"
+            qs = qs.filter(**{prefix + "allocation__assignment__teacher": r.user})
     if hasattr(model, "deleted_at"):
         qs = qs.filter(deleted_at=None)
     obj = qs.filter(pk=pk).first() if pk else None
@@ -570,6 +580,10 @@ def records(r, kind, pk=None):
         return denied()
     if kind == "retakes" and obj and obj.status != "pending":
         raise ValidationError("Yêu cầu đã được xử lý.")
+    if kind == "comments" and obj and r.user.role == "GV" and r.method != "GET" and obj.author_id != r.user.pk:
+        return denied()
+    if kind == "submissions" and obj and obj.allocation.classroom.end_date < timezone.localdate() and r.method != "GET":
+        raise ValidationError("Lớp học đã kết thúc, chỉ được xem lại bài tập.")
     if kind == "submissions" and obj and timezone.now() > obj.allocation.deadline:
         raise ValidationError("Không thể sửa hoặc hủy bài sau hạn nộp.")
     if kind == "submissions" and obj and obj.submitted_at and r.method == "PATCH":
@@ -656,6 +670,8 @@ def records(r, kind, pk=None):
             if not target.submission.submitted_at:
                 raise ValidationError("Học viên chưa xác nhận nộp bài.")
         if kind == "submissions":
+            if target.enrollment.classroom.end_date < timezone.localdate():
+                raise ValidationError("Lớp học đã kết thúc, chỉ được xem lại bài tập.")
             if target.enrollment.left_at or target.enrollment.deleted_at:
                 raise ValidationError("Học viên đã rời lớp.")
             if (
@@ -675,6 +691,9 @@ def records(r, kind, pk=None):
                 raise ValidationError("Lớp đã kết thúc hoặc buổi học bị hủy.")
         validate_active_parents(target)
         target.save()
+        if kind == "allocations":
+            target.assignment.edited = True
+            target.assignment.save(update_fields=["edited"])
         if kind == "schedules":
             sync_schedule(target, [int(x) for x in f.cleaned_data["days"]])
         if kind == "exceptions":
@@ -872,6 +891,8 @@ def upload(r, kind, pk):
     blocked = guard(r)
     if blocked is not None:
         return blocked
+    if kind == "assignments" and r.user.role != "GV":
+        return denied()
     if kind not in ["assignments", "submissions"] or not can_write(kind, r.user):
         return denied()
     obj = scoped(MODELS[kind], r.user).filter(pk=pk, deleted_at=None).first()
@@ -908,28 +929,52 @@ def upload(r, kind, pk):
     attachment = Attachment.objects.create(
         file=file, original_name=name, size=file.size, **kwargs
     )
+    if kind == "assignments":
+        obj.edited = True
+        obj.save(update_fields=["edited"])
     audit(r.user, "upload", obj, {"attachment_id": attachment.pk})
     return JsonResponse({"ok": True, "id": attachment.pk})
 
 
+def authorized_attachment(r, pk):
+    attachment = Attachment.objects.select_related("assignment", "submission__allocation__assignment").filter(pk=pk).first()
+    if not attachment:
+        raise Http404
+    assignment = attachment.assignment if attachment.assignment_id else attachment.submission.allocation.assignment
+    if assignment.deleted_at or (attachment.submission_id and attachment.submission.deleted_at):
+        raise Http404
+    model, owner_id = (Assignment, attachment.assignment_id) if attachment.assignment_id else (Submission, attachment.submission_id)
+    if not scoped(model, r.user).filter(pk=owner_id).exists():
+        return None
+    if r.user.role == "GV" and assignment.teacher_id != r.user.pk:
+        return None
+    if attachment.submission_id and r.user.role != "HV" and not attachment.submission.submitted_at:
+        return None
+    if attachment.assignment_id and r.user.role == "HV" and not Allocation.objects.filter(
+        assignment=assignment, classroom__in=classes_for(r.user), deleted_at=None).exists():
+        return None
+    return attachment
+
+
 @require_http_methods(["GET"])
-def download(r, pk):
+def download(r, pk, preview=False):
     blocked = guard(r)
     if blocked is not None:
         return blocked
-    a = Attachment.objects.filter(pk=pk).first()
-    if not a:
-        raise Http404
-    model = Assignment if a.assignment_id else Submission
-    if not scoped(model, r.user).filter(pk=a.assignment_id or a.submission_id).exists():
+    attachment = authorized_attachment(r, pk)
+    if attachment is None:
         return denied()
-    response = FileResponse(
-        a.file.open("rb"),
-        as_attachment=True,
-        filename=a.original_name,
-        content_type="application/octet-stream",
-    )
+    extension = attachment.original_name.rsplit(".", 1)[-1].lower()
+    types = {"pdf": "application/pdf", "png": "image/png", "jpg": "image/jpeg", "jpeg": "image/jpeg"}
+    if preview and extension not in types:
+        return JsonResponse({"error": "Định dạng này hỗ trợ tải xuống để xem."}, status=415)
+    response = FileResponse(attachment.file.open("rb"), as_attachment=not preview,
+        filename=attachment.original_name, content_type=types[extension] if preview else "application/octet-stream")
     response["X-Content-Type-Options"] = "nosniff"
+    response["Cache-Control"] = "private, no-store"
+    if preview:
+        response["X-Frame-Options"] = "SAMEORIGIN"
+        response["Content-Security-Policy"] = "frame-ancestors 'self'"
     return response
 
 
@@ -948,6 +993,8 @@ def progress(r):
     allocations = list(Allocation.objects.filter(
         classroom__in=classes, deleted_at=None, assignment__deleted_at=None
     ).select_related("assignment", "session", "classroom__course"))
+    if r.user.role == "GV":
+        allocations = [a for a in allocations if a.assignment.teacher_id == r.user.pk]
     by_class = {}
     for allocation in allocations:
         by_class.setdefault(allocation.classroom_id, []).append(allocation)

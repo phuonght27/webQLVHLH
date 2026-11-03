@@ -5,13 +5,14 @@ import secrets
 import zipfile
 from pathlib import Path
 
+from django import forms
 from django.core.exceptions import ValidationError
 from django.db import transaction
 from django.http import Http404, JsonResponse
 from django.utils import timezone
 from django.views.decorators.http import require_http_methods
 
-from .models import Assignment, Allocation, Attachment, Comment, Enrollment, Submission, Classroom, Session
+from .models import Assignment, Allocation, Attachment, Comment, Enrollment, Submission, Classroom, Session, SubmissionException, SubmissionUpdate
 from .services import scoped, classes_for, validate_active_parents
 from .views import api, guard, denied, audit, data, form_for
 
@@ -22,18 +23,24 @@ def files_for(**owner):
 
 
 def comments_for(submission):
-    return [{"id": c.pk, "author": c.author.full_name, "content": c.content,
+    return [{"id": c.pk, "author": c.author.full_name, "author_id": c.author_id, "content": c.content,
              "created_at": c.created_at.isoformat()}
             for c in Comment.objects.filter(submission=submission, deleted_at=None)
             .select_related("author").order_by("created_at", "pk")]
 
 
 def submission_data(sub):
+    review = SubmissionException.objects.filter(submission=sub, deleted_at=None).order_by("-created_at", "-pk").first()
+    update = SubmissionUpdate.objects.filter(allocation=sub.allocation, enrollment=sub.enrollment).order_by("-created_at", "-pk").first()
+    reason = review.reason if review else ""
+    if update and (not review or update.created_at > review.created_at):
+        reason = update.reason
     return {"id": sub.pk, "student": sub.enrollment.student.full_name,
             "student_code": sub.enrollment.student.username,
             "enrollment": sub.enrollment_id, "status": sub.status,
             "submitted_at": sub.submitted_at.isoformat() if sub.submitted_at else None,
-            "content": sub.content, "files": files_for(submission=sub),
+            "content": sub.content, "invalid": sub.invalid, "change_reason": reason,
+            "files": files_for(submission=sub),
             "comments": comments_for(sub)}
 
 
@@ -43,7 +50,10 @@ def allocation_data(a):
             "session": f"Buổi {a.session.number}", "date": a.session.date.isoformat(),
             "deadline": a.deadline.isoformat(), "title": a.assignment.title,
             "assignment_id": a.assignment_id, "description": a.assignment.description,
-            "teacher": a.assignment.teacher.full_name}
+            "teacher": a.assignment.teacher.full_name,
+            "teacher_id": a.assignment.teacher_id, "edited": a.assignment.edited,
+            "submitted_count": Submission.objects.filter(allocation=a, deleted_at=None, submitted_at__isnull=False, invalid=False).count(),
+            "student_count": Enrollment.objects.filter(classroom=a.classroom, deleted_at=None, left_at=None).count()}
 
 
 def visible_allocations(user):
@@ -67,6 +77,8 @@ def writable_enrollment(user, allocation):
                                   deleted_at=None, left_at=None).first()
     if not e or allocation.session.cancelled:
         raise ValidationError("Bạn không thể nộp bài cho lớp hoặc buổi học này.")
+    if allocation.classroom.end_date < timezone.localdate():
+        raise ValidationError("Lớp học đã kết thúc, chỉ được xem lại bài tập.")
     validate_active_parents(allocation)
     return e
 
@@ -139,28 +151,36 @@ def index(r):
         allocations = visible_allocations(r.user)
         if r.user.role == "HV":
             rows = []
-            for a in allocations.order_by("-session__date", "-pk"):
+            for a in allocations.order_by("-session__date", "-session__number", "deadline", "-pk"):
                 sub = Submission.objects.filter(allocation=a, enrollment__student=r.user,
                                                 deleted_at=None).first()
                 item = allocation_data(a)
                 item.update(status=sub.status if sub else (
                     "Quá hạn" if timezone.now() > a.deadline else "Chưa nộp"),
-                    comments=comments_for(sub) if sub else [])
+                    comments=comments_for(sub) if sub else [],
+                    can_submit=bool(not (sub and sub.submitted_at) and a.classroom.end_date >= timezone.localdate()
+                        and not a.session.cancelled and not a.classroom.archived_at
+                        and not a.classroom.course.archived_at and Enrollment.objects.filter(
+                            classroom=a.classroom, student=r.user, deleted_at=None, left_at=None).exists()))
                 rows.append(item)
         else:
             rows = []
             for assignment in scoped(Assignment, r.user).filter(deleted_at=None).order_by("-pk"):
                 rows.append({"id": assignment.pk, "title": assignment.title,
-                             "description": assignment.description,
+                             "description": assignment.description, "edited": assignment.edited,
+                             "teacher": assignment.teacher.full_name,
                              "allocations": [allocation_data(a) for a in allocations.filter(assignment=assignment)],
                              "files": files_for(assignment=assignment)})
-        return JsonResponse({"rows": rows})
+        return JsonResponse({"rows": rows, "has_classes": classes_for(r.user).exists()})
     if r.user.role != "GV":
         return denied()
     payload = json.loads(r.POST.get("payload", "{}"))
     if not isinstance(payload, dict):
         raise ValidationError("Thông tin bài tập không hợp lệ.")
-    title = str(payload.get("title", "")).strip()
+    title = payload.get("title", "")
+    if not isinstance(title, str):
+        raise ValidationError("Tiêu đề không hợp lệ.")
+    title = title.strip()
     errors = {}
     if not title or len(title) > 255:
         errors["title"] = "Tiêu đề bài tập bắt buộc, tối đa 255 ký tự."
@@ -214,8 +234,11 @@ def detail(r, pk):
             deleted_at=None, left_at=None).exists() and not a.session.cancelled
             and not a.classroom.archived_at and not a.classroom.deleted_at
             and not a.classroom.course.archived_at and not a.classroom.course.deleted_at
+            and a.classroom.end_date >= timezone.localdate()
             and not (sub and sub.submitted_at))
-        result["can_cancel"] = bool(sub and sub.submitted_at and timezone.now() <= a.deadline)
+        result["can_cancel"] = bool(sub and sub.submitted_at and timezone.now() <= a.deadline
+            and a.classroom.end_date >= timezone.localdate()
+            and Enrollment.objects.filter(classroom=a.classroom, student=r.user, deleted_at=None, left_at=None).exists())
     else:
         roster = []
         for e in Enrollment.objects.filter(classroom=a.classroom, deleted_at=None).select_related("student"):
@@ -229,7 +252,94 @@ def detail(r, pk):
                     "status": "Quá hạn" if timezone.now() > a.deadline else "Chưa nộp",
                     "submitted_at": None, "files": [], "comments": []})
         result["students"] = roster
+        from .submission_updates import may_update
+        for item in roster:
+            enrollment = Enrollment.objects.get(pk=item["enrollment"])
+            item["can_update_submission"] = may_update(r.user, a, enrollment)
     return JsonResponse(result)
+
+
+@api
+@require_http_methods(["GET", "POST", "DELETE"])
+def assignment_editor(r, pk):
+    blocked = guard(r)
+    if blocked is not None:
+        return blocked
+    if r.user.role != "GV":
+        return denied()
+    assignment = Assignment.objects.filter(pk=pk, teacher=r.user, deleted_at=None).first()
+    if not assignment:
+        raise Http404
+    allocations = list(Allocation.objects.filter(assignment=assignment, deleted_at=None).select_related("assignment__teacher", "classroom__course", "session"))
+    if any(a.classroom.teacher_id != r.user.pk for a in allocations):
+        return denied()
+    if r.method == "GET":
+        return JsonResponse({"id": assignment.pk, "title": assignment.title,
+            "description": assignment.description, "edited": assignment.edited,
+            "files": files_for(assignment=assignment), "allocations": [allocation_data(a) for a in allocations]})
+    if r.method == "DELETE":
+        assignment.deleted_at = timezone.now()
+        assignment.save(update_fields=["deleted_at"])
+        audit(r.user, "delete", assignment)
+        return JsonResponse({"ok": True})
+    payload = json.loads(r.POST.get("payload", "{}"))
+    if not isinstance(payload, dict):
+        raise ValidationError("Nội dung chỉnh sửa không hợp lệ.")
+    title, description = payload.get("title", ""), payload.get("description", "")
+    if not isinstance(title, str) or not title.strip() or len(title) > 255:
+        raise ValidationError({"title": "Tiêu đề bắt buộc, tối đa 255 ký tự."})
+    if not isinstance(description, str):
+        raise ValidationError({"description": "Mô tả không hợp lệ."})
+    deadlines, remove_ids = payload.get("deadlines", []), payload.get("remove_files", [])
+    if not isinstance(deadlines, list) or not isinstance(remove_ids, list):
+        raise ValidationError("Danh sách hạn nộp/tệp không hợp lệ.")
+    by_id = {a.pk: a for a in allocations}
+    seen, updates = set(), []
+    for item in deadlines:
+        if not isinstance(item, dict):
+            raise ValidationError("Hạn nộp không hợp lệ.")
+        key = int(item.get("id", 0))
+        if key not in by_id or key in seen:
+            raise ValidationError("Chỉ được sửa hạn nộp của đúng lớp đã giao.")
+        seen.add(key)
+        allocation = by_id[key]
+        deadline = forms.DateTimeField().clean(item.get("deadline"))
+        if deadline <= timezone.now():
+            raise ValidationError({"deadline": f"{allocation.classroom}: Hạn nộp phải ở tương lai."})
+        if "classroom" in item or "session" in item:
+            raise ValidationError("Lớp và buổi học chỉ được xem, không được thay đổi.")
+        validate_active_parents(allocation)
+        updates.append((allocation, deadline))
+    if seen != set(by_id):
+        raise ValidationError("Vui lòng thiết lập hạn nộp cho tất cả các lớp đã giao.")
+    remove_ids = [int(value) for value in remove_ids]
+    remove = list(Attachment.objects.filter(assignment=assignment, pk__in=remove_ids))
+    if len(remove_ids) != len(set(remove_ids)) or len(remove) != len(remove_ids):
+        raise ValidationError("Tệp cần xóa không thuộc bài tập này.")
+    new_files = r.FILES.getlist("files")
+    existing = list(Attachment.objects.filter(assignment=assignment).exclude(pk__in=remove_ids))
+    validate_files(new_files, existing, limit=None)
+    saved = []
+    try:
+        with transaction.atomic():
+            assignment.title = title.strip()
+            assignment.description = description
+            assignment.edited = True
+            assignment.full_clean()
+            assignment.save()
+            for allocation, deadline in updates:
+                allocation.deadline = deadline
+                allocation.save(update_fields=["deadline", "updated_at"])
+            save_files(new_files, saved, assignment=assignment)
+            for file in remove:
+                storage, name = file.file.storage, file.file.name
+                file.delete()
+                transaction.on_commit(lambda storage=storage, name=name: storage.delete(name))
+            audit(r.user, "edit_homework", assignment, {"allocations": sorted(seen), "removed_files": remove_ids})
+    except Exception:
+        cleanup_files(saved)
+        raise
+    return JsonResponse({"ok": True, "id": assignment.pk})
 
 
 @api

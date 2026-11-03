@@ -17,14 +17,14 @@ from .views import api, audit, denied, guard
 def has_update_permission(user):
     # Class managers may record received work for their own classes; this does
     # not grant them the separate teacher-only moderation/exception actions.
-    return user.role == "QLLH" or can_write("exceptions", user)
+    return user.role != "QLCN" and (user.role == "QLLH" or can_write("exceptions", user))
 
 
 def may_update(user, allocation, enrollment):
     classroom = allocation.classroom
     in_scope = (user.is_superuser
         or (user.role == "QLLH" and classroom.manager_id == user.pk)
-        or (user.role == "GV" and classroom.teacher_id == user.pk))
+        or (user.role == "GV" and classroom.teacher_id == user.pk and allocation.assignment.teacher_id == user.pk))
     return bool(has_update_permission(user) and in_scope
         and enrollment.classroom_id == allocation.classroom_id
         and not enrollment.deleted_at and not enrollment.left_at

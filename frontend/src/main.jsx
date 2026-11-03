@@ -272,12 +272,6 @@ const roleMenus = [
         icon: "▦",
         roles: ["QLCN", "QLLH", "GV", "HV"],
       },
-      {
-        key: "progress",
-        title: "Trạng thái nộp bài",
-        icon: "✓",
-        roles: ["QLCN", "GV"],
-      },
     ],
   },
   {
@@ -285,6 +279,10 @@ const roleMenus = [
     icon: "▤",
     title: "Quản lý Bài tập",
     roles: ["QLCN", "QLLH", "GV", "HV"],
+    children: [
+      { key: "assignments", title: "Danh sách bài tập", icon: "▤", roles: ["QLCN", "GV"] },
+      { key: "progress", title: "Trạng thái bài nộp", icon: "✓", roles: ["QLCN", "GV"] },
+    ],
   },
   {
     key: "grades",
@@ -403,6 +401,7 @@ function toggleMenu(title) {
             onClick={() => {
               if (isGroup) {
                 toggleMenu(menu.title);
+                if (menu.key === "assignments") { S("assignments"); E(""); }
               } else {
                 S(menu.key);
                 E("");

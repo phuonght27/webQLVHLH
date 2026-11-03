@@ -12,6 +12,8 @@ urlpatterns = [
     path("api/class-management/<str:kind>/", class_management.manage),
     path("api/class-management/<str:kind>/<int:pk>/", class_management.manage),
     path("api/homework/", homework.index),
+    path("api/homework/assignments/<int:pk>/", homework.assignment_editor),
+    path("api/files/<int:pk>/preview/", views.download, {"preview": True}),
     path("api/homework/<int:pk>/", homework.detail),
     path("api/homework/<int:pk>/submit/", homework.submit),
     path("api/homework/<int:pk>/files/", homework.draft_files),
