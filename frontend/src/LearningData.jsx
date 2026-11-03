@@ -8,9 +8,9 @@ const tabs = [
   ["comments", "Nhận xét bài tập", "Danh sách nhận xét bài tập theo khóa học và buổi học."],
 ];
 const unique = (rows, key) => [...new Set(rows.map(x => String(x[key])))].sort((a,b) => a.localeCompare(b, "vi", {numeric:true}));
-export default function LearningData() {
+export default function LearningData({ selectedTab = "grades", hideTabs = false }) {
   const [data, setData] = useState(null);
-  const [tab, setTab] = useState("grades");
+  const [tab, setTab] = useState(selectedTab);
   const [query, setQuery] = useState("");
   const [search, setSearch] = useState("");
   const [filters, setFilters] = useState({});
@@ -40,7 +40,7 @@ export default function LearningData() {
     </div>
   </section>;
   return <section className="learning-data">
-    <div className="learning-tabs">{tabs.map(([id,label]) => <button key={id} className={tab===id?"active":""} onClick={() => reset(id)}>{label}</button>)}</div>
+    {!hideTabs && <div className="learning-tabs">{tabs.map(([id,label]) => <button key={id} className={tab===id?"active":""} onClick={() => reset(id)}>{label}</button>)}</div>}
     <h2>Tổng quan {tabs.find(x=>x[0]===tab)[1].toLowerCase()}</h2><p className="learning-subtitle">{tabs.find(x=>x[0]===tab)[2]}</p>
     <div className="learning-toolbar"><form onSubmit={e=>{e.preventDefault();setSearch(query);setPage(1)}}><input placeholder="Tìm kiếm tên khóa học, mã lớp học..." value={query} onChange={e=>setQuery(e.target.value)}/><button className="primary">⌕ Tìm kiếm</button></form><button onClick={()=>setShowFilters(x=>!x)}>☷ Lọc</button></div>
     {showFilters && <div className="learning-filters">{fields.map(([key,label]) => <label key={key}>{label}<select value={filters[key]||""} onChange={e=>{setFilters(f=>({...f,[key]:e.target.value}));setPage(1)}}><option value="">Tất cả</option>{unique(rows,key).map(v=><option key={v} value={v}>{key==="session"?"Buổi "+v:v}</option>)}</select></label>)}<button onClick={()=>{setFilters({});setPage(1)}}>Xóa lọc</button></div>}
