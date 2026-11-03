@@ -57,9 +57,16 @@ export default function RetakeReview() {
     { label: "Số lần thiếu bài tập", actual: record?.learning?.missing_assignments, limit: "≤ 4 lần", passed: record ? record.learning.missing_assignments <= 4 : false, note: "Đối chiếu số bài tập chưa nộp hợp lệ" },
     { label: "Thời gian thi sau khi kết thúc khóa học", actual: daysAfter, limit: "Không quá 1 tháng", passed: withinOneMonth, note: "Tính từ ngày kết thúc khóa học đến ngày thi thực tế" },
   ];
-  const canCheck = !!record && !!form.examDate && !!form.reviewDate && form.actualScore !== "" && Number.isFinite(Number(form.actualScore)) && Number(form.actualScore) >= 0 && Number(form.actualScore) <= 10 && form.examDate < form.reviewDate && record.learning.input_score !== null;
   const check = () => {
-    if (!canCheck) { setValidation("Vui lòng tra cứu học viên có điểm đầu vào, nhập điểm thi thực tế (0–10); ngày thi thực tế phải trước ngày xét học lại."); return; }
+    let message = "";
+    if (loading) message = "Đang tải dữ liệu học viên. Vui lòng chờ.";
+    else if (!record) message = "Chưa tra cứu được học viên và lớp học. Vui lòng kiểm tra mã học viên, mã lớp.";
+    else if (record.learning?.input_score === null || record.learning?.input_score === undefined) message = "Chưa tìm thấy điểm đầu vào đã nhập của học viên. Vui lòng kiểm tra loại bài kiểm tra đầu vào trong mục Điểm các bài kiểm tra.";
+    else if (form.actualScore.trim() === "" || !Number.isFinite(Number(form.actualScore)) || Number(form.actualScore) < 0 || Number(form.actualScore) > 10) message = "Điểm thi thực tế phải nằm trong khoảng 0–10.";
+    else if (!form.examDate) message = "Vui lòng nhập ngày thi thực tế.";
+    else if (!form.reviewDate) message = "Vui lòng nhập ngày xét yêu cầu học lại.";
+    else if (form.examDate >= form.reviewDate) message = "Ngày thi thực tế phải trước ngày xét yêu cầu học lại.";
+    if (message) { setValidation(message); return; }
     setValidation(""); setShowResult(true);
   };
   if (showResult) return <section className="retake-review">
@@ -90,7 +97,7 @@ export default function RetakeReview() {
         <label>Tên khóa học<input value={record?.classroom?.course || ""} placeholder="Tự động hiển thị" disabled /></label>
         <label>Ngày thi thực tế <em>*</em><input type="date" value={form.examDate} onChange={e=>update("examDate",e.target.value)} /></label>
         <label>Ngày xét yêu cầu học lại <em>*</em><input type="date" value={form.reviewDate} onChange={e=>update("reviewDate",e.target.value)} /></label>
-        <label>Điểm thi thực tế <em>*</em><input type="number" min="0" max="10" step="0.5" value={form.actualScore} onChange={e=>update("actualScore",e.target.value)} placeholder="Nhập điểm thi thực tế (0–10)" /></label>
+        <label>Điểm thi thực tế <em>*</em><input type="number" min="0" max="10" step="0.5" value={form.actualScore} onChange={e=>{update("actualScore",e.target.value);setValidation("");}} placeholder="Nhập điểm thi thực tế (0–10)" /></label>
       </div>
       <div className={"retake-lookup-message" + (error ? " error" : "")} role="status">{loading ? "Đang tra cứu thông tin học viên…" : error || (choices.length > 1 && !form.classCode ? "Học viên thuộc nhiều lớp. Vui lòng chọn lớp học." : record ? "Đã tìm thấy học viên và cập nhật thông tin học tập." : "Thông tin sẽ tự động cập nhật sau khi nhập mã học viên.")}</div>
     </div>
