@@ -503,6 +503,48 @@ def records(r, kind, pk=None):
                 selected = r.GET.get("filter_" + name)
                 if selected:
                     qs = qs.filter(**{name: selected})
+        if kind == "grades":
+            # Build options from the user's authorized grade records only.
+            grade_scope = scoped(Grade, r.user).filter(deleted_at=None)
+            course_ids = grade_scope.values_list("enrollment__classroom__course_id", flat=True).distinct()
+            class_ids = grade_scope.values_list("enrollment__classroom_id", flat=True).distinct()
+            exam_ids = grade_scope.values_list("exam_type_id", flat=True).distinct()
+            filter_options = [
+                {"name": "course", "label": "Tên khóa học", "choices": [
+                    {"value": str(c.pk), "label": c.name}
+                    for c in Course.objects.filter(pk__in=course_ids).order_by("name")
+                ]},
+                {"name": "classroom", "label": "Mã lớp", "multiple": True, "choices": [
+                    {"value": str(c.pk), "label": c.code, "course": str(c.course_id)}
+                    for c in Classroom.objects.filter(pk__in=class_ids).order_by("code")
+                ]},
+                {"name": "exam_type", "label": "Loại bài kiểm tra", "multiple": True, "choices": [
+                    {"value": str(t.pk), "label": t.name}
+                    for t in ExamType.objects.filter(pk__in=exam_ids).order_by("name")
+                ]},
+                {"name": "overall", "label": "Khoảng điểm Overall", "choices": [
+                    {"value": "lt5", "label": "Dưới 5.0"},
+                    {"value": "lt6.5", "label": "Dưới 6.5"},
+                    {"value": "lt8", "label": "Dưới 8.0"},
+                    {"value": "gte8", "label": "Từ 8.0 trở lên"},
+                ]},
+            ]
+            course = r.GET.get("filter_course", "")
+            if course.isdigit():
+                qs = qs.filter(enrollment__classroom__course_id=int(course))
+            classrooms = [int(x) for x in r.GET.get("filter_classroom", "").split(",") if x.isdigit()]
+            if classrooms:
+                qs = qs.filter(enrollment__classroom_id__in=classrooms)
+            exams = [int(x) for x in r.GET.get("filter_exam_type", "").split(",") if x.isdigit()]
+            if exams:
+                qs = qs.filter(exam_type_id__in=exams)
+            overall_range = r.GET.get("filter_overall", "")
+            if overall_range in ("lt5", "lt6.5", "lt8", "gte8"):
+                # Overall is calculated from four skills, rounded to 0.5.
+                # Use the same Python property to avoid mismatched rounding.
+                cutoff = {"lt5": Decimal("5"), "lt6.5": Decimal("6.5"), "lt8": Decimal("8"), "gte8": Decimal("8")}[overall_range]
+                matching_ids = [g.pk for g in qs if (g.overall >= cutoff if overall_range == "gte8" else g.overall < cutoff)]
+                qs = qs.filter(pk__in=matching_ids)
         if kind == "accounts":
             filter_options.append({
                 "name": "role",
