@@ -1961,3 +1961,18 @@ nav button {
 .grade-advanced-filters .grade-filter-options label.is-selected { background: #edf3ff; }
 .grade-advanced-filters .grade-filter-options .grade-filter-all { display: block; width: 100%; min-height: 36px; padding: 7px 12px; border: 0; border-radius: 0; background: #fff; color: #253b75; text-align: left; font-size: 14px; font-weight: 400; cursor: pointer; }
 .grade-advanced-filters .grade-filter-options .grade-filter-all:hover { background: #edf3ff; }
+
+/* Hide checkboxes visually in class/exam dropdowns; selected items remain highlighted. */
+.grade-advanced-filters .grade-filter-options label input.grade-filter-hidden-checkbox[type="checkbox"] {
+  position: absolute !important;
+  width: 1px !important;
+  height: 1px !important;
+  opacity: 0 !important;
+  overflow: hidden !important;
+  clip-path: inset(50%);
+  pointer-events: none;
+}
+.grade-advanced-filters .grade-filter-options label:has(input.grade-filter-hidden-checkbox:focus-visible) {
+  outline: 2px solid #4267eb;
+  outline-offset: -2px;
+}
