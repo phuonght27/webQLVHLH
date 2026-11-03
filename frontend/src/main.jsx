@@ -1246,7 +1246,8 @@ function Records({ kind, user, run, notify, refresh, reload, open }) {
     [archived, A] = useState(false),
     [detail, DE] = useState(null),
     [status, SS] = useState(""),
-    [filters, FL] = useState({});
+    [filters, FL] = useState({}),
+    [gradeFilterOpen, setGradeFilterOpen] = useState(false);
   useEffect(() => {
     D(null);
     run(async () =>
@@ -1324,7 +1325,7 @@ if (kind === "grades" && detail?.gradePage) {
       {gradeMode ? (
         <div className="grade-management-toolbar">
           <div className="grade-management-search">
-            <button type="button" onClick={() => document.getElementById("grade-filter-panel")?.classList.toggle("is-open")}>☷ &nbsp; Lọc</button>
+            <button type="button" onClick={() => setGradeFilterOpen(v => !v)} aria-expanded={gradeFilterOpen} aria-controls="grade-filter-panel">☷ &nbsp; Lọc</button>
             <form onSubmit={e => { e.preventDefault(); SQ(q); P(1); }}>
               <input value={q} onChange={e => Q(e.target.value)} placeholder="⌕  Nhập từ khóa tìm kiếm (Họ tên, Mã học viên, ...)" />
               <button className="primary" type="submit">Tìm kiếm</button>
@@ -1361,7 +1362,7 @@ if (kind === "grades" && detail?.gradePage) {
           </div>
         </div>
       )}
-      {gradeMode && <div id="grade-filter-panel" className="filters grade-management-filters grade-advanced-filters">
+      {gradeMode && <div id="grade-filter-panel" className={`filters grade-management-filters grade-advanced-filters${gradeFilterOpen ? " is-open" : ""}`}>
         {result.filters?.map(f => {
           const choices = f.name === "classroom" && filters.course
             ? f.choices.filter(c => c.course === filters.course)
