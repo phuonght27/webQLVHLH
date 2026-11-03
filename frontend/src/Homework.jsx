@@ -140,14 +140,15 @@ function StudentSubmission({ detail, reload, notify }) {
 function TeacherSubmissions({ detail, teacher, userId, reload, notify }) {
   const [view, setView] = useState(null), [q, search] = useState("");
   const [updating, update] = useState(null), [file, chooseFile] = useState(null);
-  const [status, filter] = useState(""), [page, paginate] = useState(1);
+  const [status, filter] = useState(""), [page, paginate] = useState(1), [filterOpen, setFilterOpen] = useState(false);
   const filtered = detail.students.filter(s => `${s.student} ${s.student_code}`.toLocaleLowerCase("vi").includes(q.toLocaleLowerCase("vi")) && (!status || s.status === status));
   const totalPages = Math.max(1, Math.ceil(filtered.length / 10)), current = Math.min(page, totalPages);
   useEffect(() => paginate(1), [q, status]);
   const selected = detail.students.find(s => s.id && s.id === view);
   return <section className="card homework-card"><div className="cardhead"><h3>Bài nộp của học viên</h3><span className="badge">{detail.students.filter(s => s.submitted_at).length}/{detail.students.length} đã nộp</span></div>
     <label>Tìm học viên<input value={q} onChange={e => search(e.target.value)} placeholder="Họ tên hoặc mã học viên" /></label>
-    <label>Trạng thái bài nộp<select aria-label="Lọc bài nộp" value={status} onChange={e => filter(e.target.value)}><option value="">Tất cả trạng thái</option>{["Chưa nộp","Quá hạn","Đã nộp","Nộp muộn","Không hợp lệ"].map(s => <option key={s} value={s}>{s === "Quá hạn" ? "Thiếu bài" : s}</option>)}</select></label>
+    <button type="button" className="record-filter-toggle" onClick={() => setFilterOpen(v => !v)} aria-expanded={filterOpen} aria-controls="homework-status-filter">☷ &nbsp; Lọc</button>
+    {filterOpen && <div id="homework-status-filter" className="filters record-filter-panel"><label>Trạng thái bài nộp<select aria-label="Lọc bài nộp" value={status} onChange={e => filter(e.target.value)}><option value="">Tất cả trạng thái</option>{["Chưa nộp","Quá hạn","Đã nộp","Nộp muộn","Không hợp lệ"].map(s => <option key={s} value={s}>{s === "Quá hạn" ? "Thiếu bài" : s}</option>)}</select></label><button type="button" onClick={() => filter("")}>× Xóa bộ lọc</button></div>}
     <div className="tablewrap"><table><thead><tr><th>Học viên</th><th>Tệp bài làm</th><th>Trạng thái</th><th>Thời gian nộp</th><th>Nhận xét</th><th>Thao tác</th></tr></thead><tbody>
       {filtered.slice((current - 1) * 10, current * 10).map(s => <tr key={s.enrollment}>
         <td><b>{s.student}</b><small className="student-code">{s.student_code}</small></td><td>{s.files.length ? <Files files={s.files} /> : "—"}</td><td><span className={`assignment-status ${statusTone(submissionLabel(s.status, detail.deadline, s.comments))}`}>{submissionLabel(s.status, detail.deadline, s.comments)}</span>{s.change_reason && <small className="student-code">{s.change_reason}</small>}</td><td>{date(s.submitted_at)}</td>

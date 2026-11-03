@@ -59,3 +59,16 @@
   .cm-detail dl { grid-template-columns: minmax(0, 1fr); gap: 8px; }
   .cm-list-head { flex-wrap: wrap; }
 }
+
+/* Classroom filter/search toolbar matches the account list layout. */
+.cm-toolbar .cm-toolbar-search { display: flex; align-items: center; gap: 14px; flex: 1 1 550px; min-width: 0; }
+.cm-toolbar .cm-toolbar-search form { display: flex; align-items: center; gap: 14px; flex: 1; min-width: 0; }
+.cm-toolbar .cm-toolbar-search input { width: 100%; min-width: 140px; flex: 1; min-height: 44px; border: 1px solid #dbe3f5; border-radius: 7px; padding: 10px 14px; }
+.cm-toolbar .cm-filter-toggle { flex-shrink: 0; min-height: 44px; margin: 0; padding: 0 20px; border: 1px solid #bacbff; border-radius: 7px; background: #fff; color: #3453ea; font-size: 14px; font-weight: 700; }
+.cm-toolbar .cm-toolbar-search .primary { min-height: 44px; padding: 0 20px; white-space: nowrap; font-size: 14px; }
+.cm-toolbar .cm-toolbar-actions { display: flex; gap: 10px; flex-wrap: wrap; }
+@media (max-width: 680px) {
+  .cm-toolbar .cm-toolbar-search { flex-wrap: wrap; }
+  .cm-toolbar .cm-toolbar-search form { flex: 1 1 100%; }
+  .cm-toolbar .cm-toolbar-search input { min-width: 0; }
+}
