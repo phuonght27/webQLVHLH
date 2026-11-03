@@ -1,6 +1,6 @@
 from django.http import JsonResponse
 from django.views.decorators.http import require_GET
-from .models import Enrollment, ExamType
+from .models import Enrollment, ExamType, Grade
 from .services import classes_for, can_write
 from .views import api, guard, denied
 
@@ -32,6 +32,7 @@ def grade_entry_options(request):
             "student_code": e.student.username,
             "class_code": chosen.code,
             "course": chosen.course.name,
+            "used_exam_types": list(Grade.objects.filter(enrollment=e, deleted_at=None).values_list("exam_type_id", flat=True)),
         } for e in enrollments]
     return JsonResponse({
         "classes": [{"id": c.pk, "code": c.code,
