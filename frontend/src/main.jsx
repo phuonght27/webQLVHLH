@@ -9,6 +9,7 @@ import Homework from "./Homework";
 import ClassManagement from "./ClassManagement";
 import ManagerPassword from "./ManagerPassword";
 import GradeEntry from "./GradeEntry";
+import LearningData from "./LearningData";
 import GradeSingleAdd from "./GradeSingleAdd";
 import SubmissionProgress from "./SubmissionProgress";
 const sections = [
@@ -518,6 +519,8 @@ function toggleMenu(title) {
               run={run}
               user={user}
             />
+          ) : section === "learning" ? (
+            <LearningData />
           ) : (
             <Records
               key={section}
