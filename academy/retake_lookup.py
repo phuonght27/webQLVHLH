@@ -1,3 +1,4 @@
+import unicodedata
 from django.http import JsonResponse
 from django.views.decorators.http import require_GET
 from django.db.models import Q
@@ -45,7 +46,10 @@ def retake_student_lookup(request):
         enrollment=e, deleted_at__isnull=True, archived_at__isnull=True
     ).select_related("exam_type").order_by("exam_date")
     grade_items = [{"exam_type": g.exam_type.name, "date": g.exam_date.isoformat(), "overall": float(g.overall)} for g in grades]
-    input_grades = [g for g in grades if "đầu vào" in g.exam_type.name.casefold() or "dau vao" in g.exam_type.name.casefold() or "placement" in g.exam_type.name.casefold()]
+    def normalize_name(value):
+        value = value.casefold().replace("đ", "d")
+        return "".join(c for c in unicodedata.normalize("NFD", value) if unicodedata.category(c) != "Mn")
+    input_grades = [g for g in grades if any(term in normalize_name(g.exam_type.name) for term in ("dau vao", "placement", "entry", "initial", "dau khoa"))]
     input_score = float(input_grades[-1].overall) if input_grades else None
     return JsonResponse({
         "multiple": False, "classes": classes,
