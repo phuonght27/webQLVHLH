@@ -57,9 +57,9 @@ export default function RetakeReview() {
     { label: "Số lần thiếu bài tập", actual: record?.learning?.missing_assignments, limit: "≤ 4 lần", passed: record ? record.learning.missing_assignments <= 4 : false, note: "Đối chiếu số bài tập chưa nộp hợp lệ" },
     { label: "Thời gian thi sau khi kết thúc khóa học", actual: daysAfter, limit: "Không quá 1 tháng", passed: withinOneMonth, note: "Tính từ ngày kết thúc khóa học đến ngày thi thực tế" },
   ];
-  const canCheck = !!record && !!form.examDate && !!form.reviewDate && form.actualScore !== "" && Number.isFinite(Number(form.actualScore)) && Number(form.actualScore) >= 0 && Number(form.actualScore) <= 10 && form.reviewDate >= form.examDate && record.learning.input_score !== null;
+  const canCheck = !!record && !!form.examDate && !!form.reviewDate && form.actualScore !== "" && Number.isFinite(Number(form.actualScore)) && Number(form.actualScore) >= 0 && Number(form.actualScore) <= 10 && form.examDate < form.reviewDate && record.learning.input_score !== null;
   const check = () => {
-    if (!canCheck) { setValidation("Vui lòng tra cứu học viên có điểm đầu vào, nhập điểm thi thực tế (0–10) và các ngày hợp lệ."); return; }
+    if (!canCheck) { setValidation("Vui lòng tra cứu học viên có điểm đầu vào, nhập điểm thi thực tế (0–10); ngày thi thực tế phải trước ngày xét học lại."); return; }
     setValidation(""); setShowResult(true);
   };
   if (showResult) return <section className="retake-review">
