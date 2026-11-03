@@ -1,3 +1,4 @@
+import { AssignmentDescription } from "./AssignmentDescription";
 import React, { useRef, useState } from "react";
 import "./student-detail.css";
 
@@ -29,7 +30,7 @@ export function StudentDetailInfo({ detail, formatDate }) {
   return <section className="card student-detail-info" aria-labelledby="student-detail-heading">
     <h2 id="student-detail-heading">Thông tin chi tiết bài tập</h2>
     <div className="student-detail-field"><h3>Tiêu đề</h3><div className="detail-readonly detail-title">{detail.title}</div></div>
-    <div className="student-detail-field"><h3>Mô tả</h3><div className="detail-readonly preserve-lines">{detail.description || "Chưa có mô tả."}</div></div>
+    <div className="student-detail-field"><h3>Mô tả</h3><div className="detail-readonly preserve-lines"><AssignmentDescription text={detail.description || "Chưa có mô tả."} /></div></div>
     <div className="student-detail-field"><h3>Tài liệu đính kèm</h3>
       {detail.files.length ? <ul className="detail-attachments">{detail.files.map(file => <li key={file.id}>
         <FileType name={file.name} /><a href={`/api/files/${file.id}/`} className="detail-file-name">{file.name}</a>

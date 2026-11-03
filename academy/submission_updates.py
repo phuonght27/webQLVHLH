@@ -17,14 +17,14 @@ from .views import api, audit, denied, guard
 def has_update_permission(user):
     # Class managers may record received work for their own classes; this does
     # not grant them the separate teacher-only moderation/exception actions.
-    return user.role == "QLLH" or can_write("exceptions", user)
+    return user.role != "QLCN" and (user.role == "QLLH" or can_write("exceptions", user))
 
 
 def may_update(user, allocation, enrollment):
     classroom = allocation.classroom
     in_scope = (user.is_superuser
         or (user.role == "QLLH" and classroom.manager_id == user.pk)
-        or (user.role == "GV" and classroom.teacher_id == user.pk))
+        or (user.role == "GV" and classroom.teacher_id == user.pk and allocation.assignment.teacher_id == user.pk))
     return bool(has_update_permission(user) and in_scope
         and enrollment.classroom_id == allocation.classroom_id
         and not enrollment.deleted_at and not enrollment.left_at
@@ -75,8 +75,17 @@ def update_submission(r, allocation_id, enrollment_id):
             "assignment": allocation.assignment.title,
             "deadline": timezone.localtime(allocation.deadline).strftime("%d/%m/%Y %H:%M"),
             "status": current_status(allocation, sub),
+            "can_mark_invalid": r.user.role == "GV",
+            "can_mark_late": r.user.role == "QLLH",
             "files": files_for(submission=sub) if sub else [],
         })
+    requested_status = r.POST.get("status", "keep")
+    if requested_status not in ["keep", "invalid", "late"]:
+        raise ValidationError("Trạng thái cập nhật không hợp lệ.")
+    if requested_status == "invalid" and r.user.role != "GV":
+        return denied()
+    if requested_status == "late" and r.user.role != "QLLH":
+        return denied()
     reason = r.POST.get("reason", "").strip()
     if not reason or len(reason) > 500:
         raise ValidationError("Lý do cập nhật bắt buộc, tối đa 500 ký tự.")
@@ -94,6 +103,15 @@ def update_submission(r, allocation_id, enrollment_id):
             sub = Submission.objects.select_for_update().filter(allocation=allocation, enrollment=enrollment).first()
             if sub and sub.deleted_at:
                 raise ValidationError("Bài nộp đã bị xóa, không thể cập nhật.")
+            if requested_status == "invalid" and not (sub and sub.submitted_at) and not work_file:
+                raise ValidationError("Chỉ được đánh dấu Không hợp lệ khi học viên đã nộp bài hoặc có tệp bài làm được ghi nhận.")
+            if requested_status == "late":
+                if not (sub and sub.submitted_at) and not work_file:
+                    raise ValidationError("Cần có bài đã nộp hoặc tải tệp bài làm để ghi nhận Nộp muộn.")
+                if sub and sub.invalid:
+                    raise ValidationError("Bài đã bị giáo viên đánh dấu Không hợp lệ, không được thay đổi quyết định này.")
+                if timezone.now() <= allocation.deadline:
+                    raise ValidationError("Chưa qua hạn nộp, không thể ghi nhận Nộp muộn.")
             previous = current_status(allocation, sub)
             record = SubmissionUpdate(allocation=allocation, enrollment=enrollment, author=r.user,
                 reason=reason, previous_status=previous)
@@ -110,6 +128,12 @@ def update_submission(r, allocation_id, enrollment_id):
                 # An invalid moderation decision is never silently lifted here.
                 sub.submitted_at = timezone.now()
                 sub.save(update_fields=["submitted_at", "updated_at"])
+            if requested_status == "late":
+                sub.late_override = True
+                sub.save(update_fields=["late_override", "updated_at"])
+            if requested_status == "invalid":
+                sub.invalid = True
+                sub.save(update_fields=["invalid", "updated_at"])
             if evidence:
                 record.evidence_name, record.evidence_size = evidence.name, evidence.size
                 name = secrets.token_hex(16) + Path(evidence.name).suffix.lower()

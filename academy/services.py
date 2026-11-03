@@ -135,10 +135,14 @@ def scoped(model, user):
 
 
 def can_write(kind, user):
+    if kind in ["assignments", "allocations", "comments", "exceptions"]:
+        return user.role == "GV"
     if user.is_superuser:
         return True
     if kind == "accounts":
         return user.role in ["QLCN", "QLLH"]
+    if kind in ["courses", "shifts"] and user.role == "QLLH":
+        return False
     if kind in ["courses", "shifts", "classes", "schedules", "enrollments"]:
         return user.role in ["QLCN", "QLLH"]
     if kind in ["assignments", "allocations", "comments", "exceptions", "grades"]:

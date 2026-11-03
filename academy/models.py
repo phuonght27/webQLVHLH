@@ -249,6 +249,8 @@ class Session(models.Model):
     shift = models.ForeignKey(Shift, on_delete=models.PROTECT)
     room = models.ForeignKey(Room, on_delete=models.PROTECT)
     cancelled = models.BooleanField(default=False)
+    # Calendar visibility is independent from cancellation/learning records.
+    archived_at = models.DateTimeField(null=True, blank=True)
 
     class Meta:
         constraints = [
@@ -318,6 +320,7 @@ class Submission(Record):
     content = models.TextField("Nội dung bài làm")
     submitted_at = models.DateTimeField(null=True, editable=False)
     invalid = models.BooleanField(default=False, editable=False)
+    late_override = models.BooleanField(default=False, editable=False)
 
     class Meta:
         constraints = [
@@ -343,7 +346,7 @@ class Submission(Record):
             return (
                 "Quá hạn" if timezone.now() > self.allocation.deadline else "Chưa nộp"
             )
-        return "Nộp muộn" if self.submitted_at > self.allocation.deadline else "Đã nộp"
+        return "Nộp muộn" if self.late_override or self.submitted_at > self.allocation.deadline else "Đã nộp"
 
     def __str__(self):
         return f"{self.enrollment.student} · {self.allocation.assignment}"

@@ -1,3 +1,4 @@
+import ActionMenu from "./ActionMenu";
 import React, { useState, useEffect } from "react";
 import { createRoot } from "react-dom/client";
 import "./style.css";
@@ -5,6 +6,8 @@ import SidebarIcon from "./SidebarIcon";
 import "./sidebar-icons.css";
 import { api } from "./api";
 import Homework from "./Homework";
+import ClassManagement from "./ClassManagement";
+import ManagerPassword from "./ManagerPassword";
 import SubmissionProgress from "./SubmissionProgress";
 const sections = [
   ["⌂", "home", "Trang chủ"],
@@ -270,12 +273,6 @@ const roleMenus = [
         icon: "▦",
         roles: ["QLCN", "QLLH", "GV", "HV"],
       },
-      {
-        key: "progress",
-        title: "Trạng thái nộp bài",
-        icon: "✓",
-        roles: ["QLCN", "GV"],
-      },
     ],
   },
   {
@@ -283,6 +280,10 @@ const roleMenus = [
     icon: "▤",
     title: "Quản lý Bài tập",
     roles: ["QLCN", "QLLH", "GV", "HV"],
+    children: [
+      { key: "assignments", title: "Danh sách bài tập", icon: "▤", roles: ["QLCN", "GV"] },
+      { key: "progress", title: "Trạng thái bài nộp", icon: "✓", roles: ["QLCN", "GV"] },
+    ],
   },
   {
     key: "grades",
@@ -358,7 +359,7 @@ function toggleMenu(title) {
     .map(menu => ({
       ...menu,
       children: menu.children?.filter(child =>
-        child.roles.includes(user.role)
+        child.roles.includes(user.role) || (user.role === "QLLH" && ["courses", "shifts"].includes(child.key))
       ),
     }));
 
@@ -401,6 +402,7 @@ function toggleMenu(title) {
             onClick={() => {
               if (isGroup) {
                 toggleMenu(menu.title);
+                if (menu.key === "assignments") { S("assignments"); E(""); }
               } else {
                 S(menu.key);
                 E("");
@@ -498,7 +500,9 @@ function toggleMenu(title) {
           </div>
         )}
         <div className="content">
-          {section === "assignments" ? (
+          {((user.role === "QLLH" && ["courses", "shifts", "classes", "schedules"].includes(section)) || (user.role === "QLCN" && ["courses", "shifts"].includes(section))) ? (
+            <ClassManagement key={section} kind={section} user={user} notify={notify} />
+          ) : section === "assignments" ? (
             user.role === "QLLH" ? (
               <SubmissionProgress refresh={refresh} notify={notify} />
             ) : (
@@ -599,13 +603,11 @@ function toggleMenu(title) {
               />
               
             ) : modal.type === "password" ? (
-              <Password
-                run={run}
-                done={() => {
-                  U(null);
-                  M(null);
-                }}
-              />
+              user.role === "QLLH" ? (
+                <ManagerPassword user={user} notify={notify} done={() => { U(null); M(null); }} />
+              ) : (
+                <Password run={run} done={() => { U(null); M(null); }} />
+              )
             ) : (
               <Editor
                 spec={modal}
@@ -1459,7 +1461,7 @@ if (kind === "grades" && detail?.gradePage) {
                     </td>
                   ))}
                   {!accountMode && <td>
-                    <div className={gradeMode ? "rowactions grade-management-actions" : "rowactions"}>
+                    <ActionMenu>
                       <button onClick={() => show(r.id)}>
                         {kind === "grades" ? "◎ Xem chi tiết" : "◎ Chi tiết"}
                       </button>
@@ -1534,7 +1536,7 @@ if (kind === "grades" && detail?.gradePage) {
                             Xét duyệt
                           </button>
                         )}
-                    </div>
+                    </ActionMenu>
                   </td>}
                 </tr>
               ))}
