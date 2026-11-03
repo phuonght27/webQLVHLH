@@ -29,6 +29,8 @@ export default function GradeEntry({ notify, done }) {
       .catch(e => active && setError(e.message));
     return () => { active = false; };
   }, [classroom]);
+  const availableMembers = options.members.filter(m => !examType || !(m.used_exam_types || []).map(Number).includes(Number(examType)));
+  const completedCount = examType ? options.members.length - availableMembers.length : 0;
   const changeScore = (id, skill, value) => {
     setScores(p => ({ ...p, [id]: { ...p[id], [skill]: value } }));
   };
@@ -40,7 +42,7 @@ export default function GradeEntry({ notify, done }) {
   async function save(e) {
     e.preventDefault();
     setError("");
-    const rows = options.members.filter(m => SKILLS.some(k => scores[m.enrollment]?.[k] !== undefined && scores[m.enrollment]?.[k] !== ""));
+    const rows = availableMembers.filter(m => SKILLS.some(k => scores[m.enrollment]?.[k] !== undefined && scores[m.enrollment]?.[k] !== ""));
     if (!rows.length) { setError("Vui lòng nhập điểm cho ít nhất một học viên."); return; }
     for (const m of rows) {
       for (const k of SKILLS) {
@@ -84,6 +86,7 @@ export default function GradeEntry({ notify, done }) {
           </select>
         </label>
       </div>
+      {classroom && examType && <p className="grade-entry-note">Tổng số: {options.members.length} học viên · Đã có điểm: {completedCount} · Cần nhập: {availableMembers.length}</p>}
       <div className="grade-entry-scroll">
         <table>
           <thead>
@@ -91,19 +94,19 @@ export default function GradeEntry({ notify, done }) {
             <tr>{SKILLS.map(k => <th key={k}>{k[0].toUpperCase() + k.slice(1)}</th>)}</tr>
           </thead>
           <tbody>
-            {options.members.map((m, i) => (
+            {availableMembers.map((m, i) => (
               <tr key={m.enrollment}>
                 <td>{i + 1}</td><td>{m.course}</td><td>{m.name}</td><td>{m.student_code}</td><td>{m.class_code}</td>
                 {SKILLS.map(k => <td key={k}><input type="number" min="0" max="10" step="0.5" aria-label={`${k} - ${m.name}`} value={scores[m.enrollment]?.[k] ?? ""} onChange={e => changeScore(m.enrollment, k, e.target.value)} /></td>)}
                 <td><strong>{overall(m.enrollment)}</strong></td>
               </tr>
             ))}
-            {!options.members.length && <tr><td colSpan="10">{classroom ? "Lớp chưa có học viên đang học." : "Chọn mã lớp để hiển thị danh sách học viên."}</td></tr>}
+            {!availableMembers.length && <tr><td colSpan="10">{!classroom ? "Chọn mã lớp để hiển thị danh sách học viên." : !options.members.length ? "Lớp chưa có học viên đang học." : examType ? "Tất cả học viên đã có điểm cho bài kiểm tra này." : "Không có học viên cần nhập điểm."}</td></tr>}
           </tbody>
         </table>
       </div>
       <p className="grade-entry-note">ⓘ Mã lớp được hệ thống tự động sinh theo quy tắc và không thể chỉnh sửa. Điểm được nhập theo bước 0.5; chỉ lưu những học viên đã nhập điểm.</p>
-      <div className="grade-entry-footer"><button type="button" onClick={done}>Hủy</button><button className="primary" disabled={busy || !classroom || !examType || !options.members.length}>{busy ? "Đang lưu…" : "Lưu điểm"}</button></div>
+      <div className="grade-entry-footer"><button type="button" onClick={done}>Hủy</button><button className="primary" disabled={busy || !classroom || !examType || !availableMembers.length}>{busy ? "Đang lưu…" : "Lưu điểm"}</button></div>
     </form>
   );
 }
