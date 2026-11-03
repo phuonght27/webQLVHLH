@@ -1361,7 +1361,31 @@ if (kind === "grades" && detail?.gradePage) {
           </div>
         </div>
       )}
-      <div id={accountMode ? "account-filter-panel" : gradeMode ? "grade-filter-panel" : undefined} className={accountMode ? "filters account-management-filters" : gradeMode ? "filters grade-management-filters" : "filters"}>
+      {gradeMode && <div id="grade-filter-panel" className="filters grade-management-filters grade-advanced-filters">
+        {result.filters?.map(f => {
+          const choices = f.name === "classroom" && filters.course
+            ? f.choices.filter(c => c.course === filters.course)
+            : f.choices;
+          const selected = (filters[f.name] || "").split(",").filter(Boolean);
+          return <div className="grade-filter-field" key={f.name}>
+            <label>{f.label}</label>
+            {f.multiple ? <details className="grade-filter-multi">
+              <summary>{selected.length ? `Đã chọn ${selected.length}` : "Tất cả"} <span>⌄</span></summary>
+              <div className="grade-filter-options">
+                {choices.map(c => <label key={c.value}><input type="checkbox" checked={selected.includes(c.value)} onChange={e => {
+                  const next = e.target.checked ? [...selected, c.value] : selected.filter(v => v !== c.value);
+                  FL(p => ({ ...p, [f.name]: next.join(",") })); P(1);
+                }} />{c.label}</label>)}
+                {!choices.length && <span>Không có lựa chọn phù hợp</span>}
+              </div>
+            </details> : <select value={filters[f.name] || ""} onChange={e => {
+              FL(p => ({ ...p, [f.name]: e.target.value, ...(f.name === "course" ? { classroom: "" } : {}) })); P(1);
+            }}><option value="">Tất cả</option>{choices.map(c => <option key={c.value} value={c.value}>{c.label}</option>)}</select>}
+          </div>;
+        })}
+        <button type="button" className="danger" onClick={() => { FL({}); Q(""); SQ(""); P(1); }}>× Xóa bộ lọc</button>
+      </div>}
+      {!gradeMode && <div id={accountMode ? "account-filter-panel" : undefined} className={accountMode ? "filters account-management-filters" : "filters"}>
         {result.filters?.map((f) => (
           <label key={f.name}>
             {f.label}
@@ -1411,7 +1435,7 @@ if (kind === "grades" && detail?.gradePage) {
         >
           × Xóa bộ lọc
         </button>
-      </div>
+      </div>}
       <div className={accountMode ? "card list account-management-table" : gradeMode ? "card list grade-management-table" : "card list"}>
         <div className="tablewrap">
           <table>
