@@ -1,3 +1,4 @@
+import ActionMenu from "./ActionMenu";
 import React, { useEffect, useState } from "react";
 import { api } from "./api";
 import "./homework.css";
@@ -151,7 +152,7 @@ function TeacherSubmissions({ detail, teacher, userId, reload, notify }) {
       {filtered.slice((current - 1) * 10, current * 10).map(s => <tr key={s.enrollment}>
         <td><b>{s.student}</b><small className="student-code">{s.student_code}</small></td><td>{s.files.length ? <Files files={s.files} /> : "—"}</td><td><span className={`assignment-status ${statusTone(submissionLabel(s.status, detail.deadline, s.comments))}`}>{submissionLabel(s.status, detail.deadline, s.comments)}</span>{s.change_reason && <small className="student-code">{s.change_reason}</small>}</td><td>{date(s.submitted_at)}</td>
         <td>{s.comments.length ? `${s.comments.length} nhận xét` : "Chưa có nhận xét"}</td>
-        <td><button disabled={!s.submitted_at} onClick={() => { setView(s.id); chooseFile(s.files[0] || null); }}>{teacher ? "Xem bài / Nhận xét" : "Xem bài nộp"}</button>{teacher && s.can_update_submission && <button onClick={() => update(s)}>Cập nhật</button>}</td>
+        <td><ActionMenu><button disabled={!s.submitted_at} onClick={() => { setView(s.id); chooseFile(s.files[0] || null); }}>{teacher ? "Xem bài / Nhận xét" : "Xem bài nộp"}</button>{teacher && s.can_update_submission && <button onClick={() => update(s)}>Cập nhật</button>}</ActionMenu></td>
       </tr>)}
     </tbody></table></div>
     {!filtered.length && <p className="muted">Không có học viên phù hợp.</p>}

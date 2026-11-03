@@ -1,0 +1,5 @@
+.row-action-trigger { display: inline-flex; align-items: center; justify-content: space-between; gap: 12px; white-space: nowrap; }
+.row-action-menu { position: fixed; z-index: 1200; display: flex; flex-direction: column; gap: 4px; padding: 6px; max-height: calc(100dvh - 16px); overflow-y: auto; background: #fff; border: 1px solid #dce4f2; border-radius: 8px; box-shadow: 0 8px 24px #14244930; }
+.row-action-menu > button, .row-action-menu > a { display: block; width: 100%; margin: 0; padding: 10px 12px; border: 0; text-align: left; white-space: normal; overflow-wrap: anywhere; background: transparent; border-radius: 5px; }
+.row-action-menu > :hover, .row-action-menu > :focus-visible { background: #edf2ff; }
+.row-action-menu > :disabled { opacity: .5; cursor: not-allowed; }

@@ -1,3 +1,4 @@
+import ActionMenu from "./ActionMenu";
 import React, { useState, useEffect } from "react";
 import { createRoot } from "react-dom/client";
 import "./style.css";
@@ -1460,7 +1461,7 @@ if (kind === "grades" && detail?.gradePage) {
                     </td>
                   ))}
                   {!accountMode && <td>
-                    <div className={gradeMode ? "rowactions grade-management-actions" : "rowactions"}>
+                    <ActionMenu>
                       <button onClick={() => show(r.id)}>
                         {kind === "grades" ? "◎ Xem chi tiết" : "◎ Chi tiết"}
                       </button>
@@ -1535,7 +1536,7 @@ if (kind === "grades" && detail?.gradePage) {
                             Xét duyệt
                           </button>
                         )}
-                    </div>
+                    </ActionMenu>
                   </td>}
                 </tr>
               ))}

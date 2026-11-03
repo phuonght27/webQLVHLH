@@ -1,3 +1,4 @@
+import ActionMenu from "./ActionMenu";
 import React, { useEffect, useState } from "react";
 
 export function submissionLabel(status, deadline, comments = []) {
@@ -29,7 +30,7 @@ export default function AssignmentList({ rows, user, hasClasses, show, create, e
         <td>{student ? <span className={`assignment-status ${statusTone(submissionLabel(row.status, row.deadline, row.comments))}`}>{submissionLabel(row.status, row.deadline, row.comments)}</span> : row.draft ? "—" : `${row.submitted_count ?? 0}/${row.student_count ?? 0} đã nộp hợp lệ`}</td>
         {student && <td>{row.can_submit ? <button onClick={() => show(row.id)}>Làm bài</button> : <span className="assignment-muted">Chỉ xem</span>}</td>}
         <td>{!row.draft && <button onClick={() => show(row.id)} aria-label={`Xem chi tiết ${row.title}`}>→ Chi tiết</button>}</td>
-        {teacher && <td><div className="assignment-table-actions"><button onClick={() => edit(row.assignment_id)} aria-label={`Sửa ${row.title}`}>✎ Sửa</button><button onClick={() => allocate(row.assignment_id)}>Giao thêm lớp</button><button className="danger" onClick={() => remove(row)} aria-label={`Xóa ${row.title}`}>▤ Xóa</button></div></td>}
+        {teacher && <td><ActionMenu><button onClick={() => edit(row.assignment_id)} aria-label={`Sửa ${row.title}`}>✎ Sửa</button><button onClick={() => allocate(row.assignment_id)}>Giao thêm lớp</button><button className="danger" onClick={() => remove(row)} aria-label={`Xóa ${row.title}`}>▤ Xóa</button></ActionMenu></td>}
       </tr>)}
     </tbody></table></div>
       {!rows ? <p className="assignment-empty">Đang tải bài tập…</p> : !filtered.length && <p className="assignment-empty">{q || classroom || status ? "Không tìm thấy bài tập phù hợp." : student && hasClasses === false ? "Bạn chưa được xếp vào lớp học nào. Vui lòng liên hệ quản lý để được hỗ trợ." : student ? "Chưa có bài tập nào được giao." : "Chưa có bài tập nào."}</p>}

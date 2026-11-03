@@ -1923,3 +1923,18 @@ nav button {
   .grade-management-search form { flex-basis: 100%; }
   .grade-management-search input { min-width: 0; }
 }
+
+/* Uniform typography for navigation labels, retaining the existing role menus. */
+.app > aside .sidebar-nav .sidebar-parent,
+.app > aside .sidebar-nav .sidebar-child,
+.app > aside .sidebar-nav .sidebar-parent .sidebar-label,
+.app > aside .sidebar-nav .sidebar-child-label,
+.app > aside .logout {
+  font-family: "Times New Roman", Times, serif;
+  font-size: 16px;
+  line-height: 1.4;
+  text-align: left;
+}
+.app > aside .sidebar-nav .sidebar-parent,
+.app > aside .sidebar-nav .sidebar-child,
+.app > aside .logout { justify-content: flex-start; }
