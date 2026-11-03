@@ -1,0 +1,61 @@
+.class-management h2 { color: #21355d; font-size: 22px; margin: 0 0 24px; }
+.cm-toolbar { display: flex; justify-content: space-between; gap: 20px; flex-wrap: wrap; margin-bottom: 20px; }
+.cm-toolbar form, .cm-toolbar > div { display: flex; align-items: center; gap: 10px; }
+.cm-toolbar input { width: 320px; max-width: 100%; }
+.cm-toolbar button, .cm-filters button { font-size: 12px; }
+.cm-filters { display: flex; align-items: end; gap: 20px; flex-wrap: wrap; padding: 18px 22px; margin-bottom: 20px; }
+.cm-filters label { margin: 0; min-width: 170px; font-size: 12px; }
+.cm-list { padding: 0; margin-top: 20px; overflow: hidden; }
+.cm-list table { min-width: 600px; }
+.cm-list th { background: #f5f7fc; padding: 16px 12px; font-size: 11px; }
+.cm-list td { padding: 16px 12px; font-size: 12px; min-width: 65px; }
+.cm-list td.cm-description { width: 60%; max-width: 650px; white-space: pre-wrap; line-height: 1.7; }
+.cm-row-actions { display: flex; gap: 6px; align-items: center; white-space: nowrap; }
+.cm-row-actions button { font-size: 10px; padding: 6px 9px; }
+.cm-status { display: inline-block; border-radius: 5px; padding: 6px 9px; white-space: nowrap; font-size: 10px; }
+.cm-status.green { color: #4b8a64; background: #eaf7ef; }
+.cm-status.yellow { color: #ae8b31; background: #fff7dc; }
+.cm-pagination { display: flex; align-items: center; justify-content: space-between; padding: 18px 20px; gap: 15px; font-size: 11px; color: #8493ae; }
+.cm-pagination > div { display: flex; gap: 7px; }
+.cm-pagination button { padding: 6px 11px; }
+.cm-empty { padding: 30px; text-align: center; color: #8a97ae; }
+.cm-permission-note, .cm-muted { font-size: 11px; color: #8b98ad; line-height: 1.8; }
+.cm-back { border: 0; padding-left: 0; margin-bottom: 18px; background: transparent; }
+.cm-detail dl { margin: 0; grid-template-columns: 200px minmax(0, 1fr); font-size: 12px; }
+.cm-detail dt, .cm-detail dd { border-bottom: 1px solid #eef1f6; padding-bottom: 13px; }
+.cm-detail dt { color: #344b76; }
+.cm-list-head { display: flex; align-items: center; justify-content: space-between; gap: 15px; padding: 20px; }
+.cm-list > .checkrow { margin: 0 20px 15px; font-size: 11px; }
+.cm-overlay { z-index: 140; }
+.cm-modal { width: min(740px, 94vw); padding: 25px 30px; }
+.cm-modal h2, .cm-confirm h2 { font-size: 18px; color: #273c6b; margin-bottom: 24px; }
+.cm-form-grid { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 18px; }
+.cm-modal label { margin: 10px 0 16px; font-size: 12px; }
+.cm-modal input:disabled, .cm-modal select:disabled { color: #8190aa; background: #f4f5f8; }
+.cm-modal textarea { min-height: 130px; }
+.cm-modal .cm-field em { display: inline; margin-left: 4px; }
+.cm-modal .cm-field { position: relative; }
+.cm-member-picker { border: 1px solid #e5eaf3; border-radius: 6px; padding: 12px; }
+.cm-member-picker > label { margin-top: 0; }
+.cm-member-picker > div { max-height: 170px; overflow: auto; }
+.cm-member-picker .checkrow { font-size: 11px; margin: 10px 0; font-weight: 400; }
+.cm-member-picker small { font-size: 11px; color: #7388ac; margin-top: 10px; }
+.cm-weekdays { display: flex; gap: 13px; flex-wrap: wrap; }
+.cm-weekdays .checkrow { font-size: 11px; margin: 5px 0; }
+.cm-field-error { font-size: 11px; color: #bd4263; font-weight: 400; }
+.cm-footer { display: flex; justify-content: flex-end; gap: 12px; margin-top: 24px; padding-top: 17px; border-top: 1px solid #e9edf7; }
+.cm-confirm-overlay { z-index: 155; }
+.cm-confirm { width: min(480px, 92vw); }
+.modal:has(> .cm-password-form) { width: min(440px, 92vw); padding: 28px; }
+.cm-password-form h2 { font-size: 20px; }
+.cm-password-form label { font-size: 12px; }
+.cm-password-form .cm-forgot { padding: 0; font-size: 11px; }
+.class-management .alert, .cm-modal .alert { margin: 0 0 18px; }
+@media (max-width: 650px) {
+  .cm-toolbar form { width: 100%; }
+  .cm-toolbar input { width: 100%; min-width: 0; }
+  .cm-form-grid { grid-template-columns: minmax(0, 1fr); gap: 0; }
+  .cm-modal { padding: 24px 18px; }
+  .cm-detail dl { grid-template-columns: minmax(0, 1fr); gap: 8px; }
+  .cm-list-head { flex-wrap: wrap; }
+}

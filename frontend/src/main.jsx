@@ -5,6 +5,8 @@ import SidebarIcon from "./SidebarIcon";
 import "./sidebar-icons.css";
 import { api } from "./api";
 import Homework from "./Homework";
+import ClassManagement from "./ClassManagement";
+import ManagerPassword from "./ManagerPassword";
 import SubmissionProgress from "./SubmissionProgress";
 const sections = [
   ["⌂", "home", "Trang chủ"],
@@ -358,7 +360,7 @@ function toggleMenu(title) {
     .map(menu => ({
       ...menu,
       children: menu.children?.filter(child =>
-        child.roles.includes(user.role)
+        child.roles.includes(user.role) || (user.role === "QLLH" && ["courses", "shifts"].includes(child.key))
       ),
     }));
 
@@ -498,7 +500,9 @@ function toggleMenu(title) {
           </div>
         )}
         <div className="content">
-          {section === "assignments" ? (
+          {((user.role === "QLLH" && ["courses", "shifts", "classes", "schedules"].includes(section)) || (user.role === "QLCN" && ["courses", "shifts"].includes(section))) ? (
+            <ClassManagement key={section} kind={section} user={user} notify={notify} />
+          ) : section === "assignments" ? (
             user.role === "QLLH" ? (
               <SubmissionProgress refresh={refresh} notify={notify} />
             ) : (
@@ -599,13 +603,11 @@ function toggleMenu(title) {
               />
               
             ) : modal.type === "password" ? (
-              <Password
-                run={run}
-                done={() => {
-                  U(null);
-                  M(null);
-                }}
-              />
+              user.role === "QLLH" ? (
+                <ManagerPassword user={user} notify={notify} done={() => { U(null); M(null); }} />
+              ) : (
+                <Password run={run} done={() => { U(null); M(null); }} />
+              )
             ) : (
               <Editor
                 spec={modal}

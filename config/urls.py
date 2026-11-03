@@ -4,8 +4,12 @@ from django.views.generic import TemplateView
 from django.conf import settings
 from django.conf.urls.static import static
 from academy import views, homework, submission_updates
+from academy import class_management
 
 urlpatterns = [
+    path("api/class-management/options/", class_management.options),
+    path("api/class-management/<str:kind>/", class_management.manage),
+    path("api/class-management/<str:kind>/<int:pk>/", class_management.manage),
     path("api/homework/", homework.index),
     path("api/homework/<int:pk>/", homework.detail),
     path("api/homework/<int:pk>/submit/", homework.submit),

@@ -152,6 +152,11 @@ def auth(r, action):
             return denied()
         if not r.user.check_password(d.get("old_password", "")):
             raise ValidationError("Mật khẩu hiện tại không đúng.")
+        if r.user.role == "QLLH" and not r.user.must_change_password:
+            if d.get("password") != d.get("confirm_password"):
+                raise ValidationError("Xác nhận mật khẩu mới không khớp.")
+            if r.user.check_password(d.get("password", "")):
+                raise ValidationError("Mật khẩu mới không được trùng mật khẩu hiện tại.")
         validate_password(d.get("password", ""), r.user)
         r.user.set_password(d["password"])
         r.user.must_change_password = False
@@ -408,6 +413,9 @@ def records(r, kind, pk=None):
     blocked = guard(r)
     if blocked is not None:
         return blocked
+    if r.user.role == "QLLH" and kind in ["courses", "shifts", "classes", "schedules", "enrollments"] and r.method != "GET":
+        from .class_management import mutate
+        return mutate(r, kind, pk)
     if kind not in MODELS:
         raise Http404
     model = MODELS[kind]

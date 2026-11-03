@@ -137,6 +137,8 @@ def can_write(kind, user):
         return True
     if kind == "accounts":
         return user.role in ["QLCN", "QLLH"]
+    if kind in ["courses", "shifts"] and user.role == "QLLH":
+        return False
     if kind in ["courses", "shifts", "classes", "schedules", "enrollments"]:
         return user.role in ["QLCN", "QLLH"]
     if kind in ["assignments", "allocations", "comments", "exceptions", "grades"]:
