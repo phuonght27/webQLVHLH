@@ -76,12 +76,15 @@ def update_submission(r, allocation_id, enrollment_id):
             "deadline": timezone.localtime(allocation.deadline).strftime("%d/%m/%Y %H:%M"),
             "status": current_status(allocation, sub),
             "can_mark_invalid": r.user.role == "GV",
+            "can_mark_late": r.user.role == "QLLH",
             "files": files_for(submission=sub) if sub else [],
         })
     requested_status = r.POST.get("status", "keep")
-    if requested_status not in ["keep", "invalid"]:
+    if requested_status not in ["keep", "invalid", "late"]:
         raise ValidationError("Trạng thái cập nhật không hợp lệ.")
     if requested_status == "invalid" and r.user.role != "GV":
+        return denied()
+    if requested_status == "late" and r.user.role != "QLLH":
         return denied()
     reason = r.POST.get("reason", "").strip()
     if not reason or len(reason) > 500:
@@ -102,6 +105,13 @@ def update_submission(r, allocation_id, enrollment_id):
                 raise ValidationError("Bài nộp đã bị xóa, không thể cập nhật.")
             if requested_status == "invalid" and not (sub and sub.submitted_at) and not work_file:
                 raise ValidationError("Chỉ được đánh dấu Không hợp lệ khi học viên đã nộp bài hoặc có tệp bài làm được ghi nhận.")
+            if requested_status == "late":
+                if not (sub and sub.submitted_at) and not work_file:
+                    raise ValidationError("Cần có bài đã nộp hoặc tải tệp bài làm để ghi nhận Nộp muộn.")
+                if sub and sub.invalid:
+                    raise ValidationError("Bài đã bị giáo viên đánh dấu Không hợp lệ, không được thay đổi quyết định này.")
+                if timezone.now() <= allocation.deadline:
+                    raise ValidationError("Chưa qua hạn nộp, không thể ghi nhận Nộp muộn.")
             previous = current_status(allocation, sub)
             record = SubmissionUpdate(allocation=allocation, enrollment=enrollment, author=r.user,
                 reason=reason, previous_status=previous)
@@ -118,6 +128,9 @@ def update_submission(r, allocation_id, enrollment_id):
                 # An invalid moderation decision is never silently lifted here.
                 sub.submitted_at = timezone.now()
                 sub.save(update_fields=["submitted_at", "updated_at"])
+            if requested_status == "late":
+                sub.late_override = True
+                sub.save(update_fields=["late_override", "updated_at"])
             if requested_status == "invalid":
                 sub.invalid = True
                 sub.save(update_fields=["invalid", "updated_at"])

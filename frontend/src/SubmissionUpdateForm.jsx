@@ -55,7 +55,7 @@ export default function SubmissionUpdateForm({ row, close, saved, statusLabels, 
     setBusy(true); setError("");
     try {
       const payload = new FormData(); payload.append("reason", reason.trim());
-      if (detail.can_mark_invalid) payload.append("status", status);
+      if (detail.can_mark_invalid || detail.can_mark_late) payload.append("status", status);
       if (evidence) payload.append("evidence", evidence);
       if (work) payload.append("work_file", work);
       await api(endpoint, payload); await saved();
@@ -72,10 +72,11 @@ export default function SubmissionUpdateForm({ row, close, saved, statusLabels, 
       <div className="submission-update-row"><span>Buổi học</span><div className="submission-update-readonly">{detail.session}</div></div>
       <div className="submission-update-row"><span>Deadline bài tập</span><div className="submission-update-readonly">{detail.deadline}</div></div>
       <div className="submission-update-row"><span>Trạng thái hiện tại</span><div><span className={`progress-status ${statusTones[detail.status] || "blue"}`}>{statusLabels[detail.status] || detail.status}</span></div></div>
-      {detail.can_mark_invalid && <div className="submission-update-row"><label htmlFor="submission-update-status">Trạng thái cập nhật</label><div><select id="submission-update-status" value={status} disabled={busy} onChange={e => setStatus(e.target.value)}>
+      {(detail.can_mark_invalid || detail.can_mark_late) && <div className="submission-update-row"><label htmlFor="submission-update-status">Trạng thái cập nhật</label><div><select id="submission-update-status" value={status} disabled={busy} onChange={e => setStatus(e.target.value)}>
         <option value="keep">Giữ trạng thái hiện tại / tính theo thời điểm nộp</option>
-        <option value="invalid">Không hợp lệ</option>
-      </select>{status === "invalid" && <small>Đánh dấu bài làm không hợp lệ. Vui lòng ghi rõ lý do bên dưới.</small>}</div></div>}
+        {detail.can_mark_invalid && <option value="invalid">Không hợp lệ</option>}
+        {detail.can_mark_late && <option value="late">Nộp muộn</option>}
+      </select>{status === "invalid" && <small>Đánh dấu bài làm không hợp lệ. Vui lòng ghi rõ lý do bên dưới.</small>}{status === "late" && <small>Cần có bài đã nộp hoặc tệp bài làm, và đã qua hạn nộp.</small>}</div></div>}
       <div className="submission-update-row reason"><label htmlFor="submission-update-reason">Lý do cập nhật <em>*</em></label><div>
         <textarea ref={reasonInput} id="submission-update-reason" maxLength={500} required value={reason} disabled={busy}
           placeholder={'Nhập lý do cập nhật\n(VD: Học viên gửi bài qua Zalo sau deadline, ốm có lý do...)'}
