@@ -25,8 +25,8 @@ function Feedback({ comments = [] }) {
     </article>)}
   </div>;
 }
-function Dialog({ title, close, children }) {
-  return <div className="overlay"><section className="modal homework-modal" role="dialog" aria-modal="true" aria-label={title}>
+function Dialog({ title, close, children, className = "" }) {
+  return <div className="overlay"><section className={`modal homework-modal ${className}`} role="dialog" aria-modal="true" aria-label={title}>
     <button className="close" onClick={close} aria-label="Đóng">×</button><h2>{title}</h2>{children}
   </section></div>;
 }
@@ -151,15 +151,15 @@ function TeacherSubmissions({ detail, teacher, userId, reload, notify }) {
       {filtered.slice((current - 1) * 10, current * 10).map(s => <tr key={s.enrollment}>
         <td><b>{s.student}</b><small className="student-code">{s.student_code}</small></td><td>{s.files.length ? <Files files={s.files} /> : "—"}</td><td><span className={`assignment-status ${statusTone(submissionLabel(s.status, detail.deadline, s.comments))}`}>{submissionLabel(s.status, detail.deadline, s.comments)}</span>{s.change_reason && <small className="student-code">{s.change_reason}</small>}</td><td>{date(s.submitted_at)}</td>
         <td>{s.comments.length ? `${s.comments.length} nhận xét` : "Chưa có nhận xét"}</td>
-        <td><button disabled={!s.submitted_at} onClick={() => setView(s.id)}>{teacher ? "Xem bài / Nhận xét" : "Xem bài nộp"}</button>{teacher && s.can_update_submission && <button onClick={() => update(s)}>Cập nhật</button>}</td>
+        <td><button disabled={!s.submitted_at} onClick={() => { setView(s.id); chooseFile(s.files[0] || null); }}>{teacher ? "Xem bài / Nhận xét" : "Xem bài nộp"}</button>{teacher && s.can_update_submission && <button onClick={() => update(s)}>Cập nhật</button>}</td>
       </tr>)}
     </tbody></table></div>
     {!filtered.length && <p className="muted">Không có học viên phù hợp.</p>}
     <div className="assignment-pagination"><span>{filtered.length} học viên</span><div><button disabled={current <= 1} onClick={() => paginate(current - 1)}>‹</button><span>{current} / {totalPages}</span><button disabled={current >= totalPages} onClick={() => paginate(current + 1)}>›</button></div></div>
     {updating && <SubmissionUpdateForm row={{allocation_id:detail.id,enrollment_id:updating.enrollment}} statusLabels={{"Đã nộp":"Đúng hạn","Quá hạn":"Thiếu bài"}} statusTones={{"Đã nộp":"green","Quá hạn":"red","Nộp muộn":"orange"}} close={() => update(null)} saved={async () => {update(null);await reload();notify("Đã cập nhật bài nộp.");}} />}
-    {selected && <Dialog title={`Bài làm · ${selected.student}`} close={() => setView(null)}>
+    {selected && <Dialog className="submission-detail-dialog" title={`Bài làm · ${selected.student}`} close={() => setView(null)}>
       <p>{detail.title} · {detail.classroom} · {detail.session}</p><p>Thời gian nộp: {date(selected.submitted_at)}</p>
-      <div className="assignment-work-viewer"><aside><h3>Tệp bài làm</h3>{selected.files.map(f => <button key={f.id} onClick={() => chooseFile(f)}>{f.name}</button>)}<Files files={selected.files} /></aside><div>{file && selected.files.some(f => f.id === file.id) ? /\.(pdf|png|jpe?g)$/i.test(file.name) ? <iframe title={`Xem ${file.name}`} src={`/api/files/${file.id}/preview/`} /> : <p>Tệp Word: <a href={`/api/files/${file.id}/`}>Tải xuống {file.name}</a> để xem nội dung.</p> : <p>Chọn một tệp để xem trước.</p>}</div></div>{selected.content && <p className="preserve-lines">{selected.content}</p>}
+      <div className="assignment-work-viewer"><div className="assignment-work-files"><h3>Tệp bài làm</h3>{selected.files.map(f => <button key={f.id} aria-pressed={file?.id === f.id} onClick={() => chooseFile(f)}>{f.name}</button>)}<Files files={selected.files} /></div><div className="assignment-work-preview">{file && selected.files.some(f => f.id === file.id) ? /\.(pdf|png|jpe?g)$/i.test(file.name) ? <iframe title={`Xem ${file.name}`} src={`/api/files/${file.id}/preview/`} /> : <p>Tệp Word: <a href={`/api/files/${file.id}/`}>Tải xuống {file.name}</a> để xem nội dung.</p> : <p>Chọn một tệp để xem trước.</p>}</div></div>{selected.content && <p className="preserve-lines">{selected.content}</p>}
       <CommentEditor submission={selected} teacher={teacher} userId={userId} reload={reload} notify={notify} />
     </Dialog>}
   </section>;
