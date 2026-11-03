@@ -44,9 +44,18 @@ export default function RetakeReview() {
     ["Điểm thi thực tế", form.actualScore === "" ? null : Number(form.actualScore), "điểm"],
   ];
   const daysAfter = metrics[1][1];
+  const endDate = record?.classroom?.end_date;
+  const examDate = form.examDate;
+  const withinOneMonth = (() => {
+    if (!endDate || !examDate) return false;
+    const [year, month, day] = endDate.split("-").map(Number);
+    const lastDay = new Date(year, month + 1, 0).getDate();
+    const deadline = [year + Math.floor(month / 12), (month % 12) + 1, Math.min(day, lastDay)].map((n, i) => i === 0 ? String(n) : String(n).padStart(2, "0")).join("-");
+    return examDate >= endDate && examDate <= deadline;
+  })();
   const checks = [
     { label: "Số lần thiếu bài tập", actual: record?.learning?.missing_assignments, limit: "≤ 4 lần", passed: record ? record.learning.missing_assignments <= 4 : false, note: "Đối chiếu số bài tập chưa nộp hợp lệ" },
-    { label: "Thời gian thi sau khi kết thúc khóa học", actual: daysAfter, limit: "0–30 ngày", passed: daysAfter !== null && daysAfter >= 0 && daysAfter <= 30, note: "Tính từ ngày kết thúc khóa học đến ngày thi thực tế" },
+    { label: "Thời gian thi sau khi kết thúc khóa học", actual: daysAfter, limit: "Không quá 1 tháng", passed: withinOneMonth, note: "Tính từ ngày kết thúc khóa học đến ngày thi thực tế" },
   ];
   const canCheck = !!record && !!form.examDate && !!form.reviewDate && form.actualScore !== "" && Number.isFinite(Number(form.actualScore)) && Number(form.actualScore) >= 0 && Number(form.actualScore) <= 10 && form.reviewDate >= form.examDate && record.learning.input_score !== null;
   const check = () => {
@@ -69,7 +78,7 @@ export default function RetakeReview() {
       <p className="retake-result-count">{checks.filter(c=>c.passed).length}/{checks.length} điều kiện tham khảo đạt.</p>
     </div>
     {!checks.every(c=>c.passed) && <div className="retake-panel"><h3>Danh sách điều kiện không đạt</h3><ul>{checks.filter(c=>!c.passed).map(c=><li key={c.label}>{c.label}: {c.actual} (yêu cầu {c.limit})</li>)}</ul></div>}
-    <div className="retake-actions"><span>Ngưỡng 4 lần và 30 ngày lấy từ ảnh mẫu, cần xác nhận trước khi sử dụng để xét duyệt chính thức.</span><button type="button" onClick={()=>setShowResult(false)}>← Quay lại chỉnh sửa</button></div>
+    <div className="retake-actions"><span>Ngưỡng 4 lần là tham khảo từ ảnh mẫu; thời hạn thi không quá 1 tháng theo yêu cầu, cần xác nhận trước khi sử dụng để xét duyệt chính thức.</span><button type="button" onClick={()=>setShowResult(false)}>← Quay lại chỉnh sửa</button></div>
   </section>;
   return <section className="retake-review">
     <div className="retake-heading"><h2>Xét duyệt yêu cầu học lại của học viên</h2></div>
