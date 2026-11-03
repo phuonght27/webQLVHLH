@@ -544,25 +544,22 @@ function toggleMenu(title) {
               ×
             </button>
             {modal.type === "grade-entry" ? (
-              <GradeEntry notify={notify} done={() => { M(null); R(x => x + 1); }} />
-
-{modal.type === "grade-entry" ? (
-  <GradeEntry
-    notify={notify}
-    done={() => {
-      M(null);
-      R(x => x + 1);
-    }}
-  />
-) : modal.type === "grade-single-add" ? (
-  <GradeSingleAdd
-    notify={notify}
-    done={() => {
-      M(null);
-      R(x => x + 1);
-    }}
-  />
-) : modal.type === "allocate" ? (
+              <GradeEntry
+                notify={notify}
+                done={() => {
+                  M(null);
+                  R(x => x + 1);
+                }}
+              />
+            ) : modal.type === "grade-single-add" ? (
+              <GradeSingleAdd
+                notify={notify}
+                done={() => {
+                  M(null);
+                  R(x => x + 1);
+                }}
+              />
+            ) : modal.type === "allocate" ? (
 
               <AllocationEditor
                 assignment={modal.id}
