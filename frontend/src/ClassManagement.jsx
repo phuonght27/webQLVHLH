@@ -85,10 +85,16 @@ export default function ClassManagement({ kind, user, notify }) {
       </div>
     </> : <>
       <h2>{titles[kind]}</h2>
-      <div className="cm-toolbar"><form onSubmit={e => { e.preventDefault(); setSearch(query.trim()); }}><input aria-label="Từ khóa tìm kiếm" value={query} onChange={e => setQuery(e.target.value)} placeholder={catalogue ? "⌕  Nhập từ khóa tìm kiếm..." : "⌕  Nhập mã lớp, khóa học hoặc giáo viên..."} /><button className="primary">Tìm</button></form>
-        <div>{canWrite && !archived && <button className="primary" disabled={!options} onClick={() => openEditor(null)}>＋ Tạo {singular[kind]}</button>}<button className={archived ? "primary" : ""} onClick={() => setArchived(!archived)}>♧ {archived ? "Đang lưu trữ" : "Lưu trữ"}</button></div>
+      <div className="cm-toolbar">
+        <div className="cm-toolbar-search">
+          {!catalogue && <button type="button" className="cm-filter-toggle" onClick={() => setFilterOpen(v => !v)} aria-expanded={filterOpen} aria-controls="cm-filter-panel">☷ &nbsp; Lọc</button>}
+          <form onSubmit={e => { e.preventDefault(); setSearch(query.trim()); }}>
+            <input aria-label="Từ khóa tìm kiếm" value={query} onChange={e => setQuery(e.target.value)} placeholder="" />
+            <button className="primary" type="submit">Tìm kiếm</button>
+          </form>
+        </div>
+        <div className="cm-toolbar-actions">{canWrite && !archived && <button className="primary" disabled={!options} onClick={() => openEditor(null)}>＋ Tạo {singular[kind]}</button>}<button className={archived ? "primary" : ""} onClick={() => setArchived(!archived)}>♧ {archived ? "Đang lưu trữ" : "Lưu trữ"}</button></div>
       </div>
-      {!catalogue && <button type="button" className="cm-filter-toggle" onClick={() => setFilterOpen(v => !v)} aria-expanded={filterOpen} aria-controls="cm-filter-panel">☷ &nbsp; Lọc</button>}
       {!catalogue && filterOpen && <div id="cm-filter-panel" className="card cm-filters"><label>Khóa học<select aria-label="Lọc khóa học" value={pendingFilters.course || ""} onChange={e => chooseFilter("course", e.target.value)}><option value="">Tất cả khóa học</option>{options?.courses.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}</select></label>
         {kind === "classes" ? <label>Trạng thái<select value={pendingFilters.status || ""} onChange={e => chooseFilter("status", e.target.value)}><option value="">Tất cả trạng thái</option>{["Chưa bắt đầu", "Đang hoạt động", "Đã kết thúc"].map(s => <option key={s}>{s}</option>)}</select></label> : <>
           <label>Phòng học<select value={pendingFilters.room || ""} onChange={e => chooseFilter("room", e.target.value)}><option value="">Tất cả phòng học</option>{options?.rooms.map(room => <option key={room.id} value={room.id}>{room.name}</option>)}</select></label>
