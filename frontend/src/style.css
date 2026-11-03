@@ -1938,3 +1938,15 @@ nav button {
 .app > aside .sidebar-nav .sidebar-parent,
 .app > aside .sidebar-nav .sidebar-child,
 .app > aside .logout { justify-content: flex-start; }
+
+/* Advanced grade filters: dropdowns appear only after clicking Lọc. */
+.grade-advanced-filters { align-items: flex-end; gap: 14px; flex-wrap: wrap; padding: 16px; }
+.grade-advanced-filters .grade-filter-field { display: flex; flex-direction: column; gap: 7px; min-width: 170px; flex: 1 1 180px; position: relative; }
+.grade-advanced-filters .grade-filter-field > label { font-size: 12px; font-weight: 700; color: #30488d; }
+.grade-advanced-filters select, .grade-filter-multi summary { min-height: 40px; border: 1px solid #d5dff1; border-radius: 6px; padding: 9px 11px; background: #fff; color: #354b83; width: 100%; }
+.grade-filter-multi summary { cursor: pointer; display: flex; justify-content: space-between; list-style: none; }
+.grade-filter-multi summary::-webkit-details-marker { display: none; }
+.grade-filter-options { position: absolute; z-index: 20; top: 100%; left: 0; right: 0; max-height: 240px; overflow-y: auto; background: #fff; border: 1px solid #d5dff1; border-radius: 6px; box-shadow: 0 8px 20px #1e306025; padding: 8px; }
+.grade-filter-options label { display: flex; align-items: center; gap: 9px; padding: 8px; font-size: 12px; cursor: pointer; }
+.grade-filter-options input { width: auto; margin: 0; }
+.grade-filter-options label:hover { background: #f1f5ff; }
