@@ -2,13 +2,15 @@ import React, { useEffect, useRef, useState } from "react";
 import { api } from "./api";
 import "./RetakeReview.css";
 
-const empty = { studentCode: "", classCode: "", examDate: "", reviewDate: "", note: "" };
+const empty = { studentCode: "", classCode: "", examDate: "", reviewDate: "", actualScore: "", note: "" };
 export default function RetakeReview() {
   const [form, setForm] = useState(empty);
   const [record, setRecord] = useState(null);
   const [choices, setChoices] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const [showResult, setShowResult] = useState(false);
+  const [validation, setValidation] = useState("");
   const sequence = useRef(0);
   const update = (key, value) => setForm(previous => ({ ...previous, [key]: value }));
   useEffect(() => {
@@ -38,9 +40,37 @@ export default function RetakeReview() {
   const metrics = [
     ["Số lần thiếu bài tập", record?.learning?.missing_assignments, "lần"],
     ["Thời gian thi sau khi kết thúc khóa học", form.examDate && record?.classroom?.end_date ? Math.round((new Date(form.examDate + "T00:00:00") - new Date(record.classroom.end_date + "T00:00:00")) / 86400000) : null, "ngày"],
-    ["Điểm đầu vào", null, "điểm"],
-    ["Điểm thi thực tế", null, "điểm"],
+    ["Điểm đầu vào", record?.learning?.input_score, "điểm"],
+    ["Điểm thi thực tế", form.actualScore === "" ? null : Number(form.actualScore), "điểm"],
   ];
+  const daysAfter = metrics[1][1];
+  const checks = [
+    { label: "Số lần thiếu bài tập", actual: record?.learning?.missing_assignments, limit: "≤ 4 lần", passed: record ? record.learning.missing_assignments <= 4 : false, note: "Đối chiếu số bài tập chưa nộp hợp lệ" },
+    { label: "Thời gian thi sau khi kết thúc khóa học", actual: daysAfter, limit: "0–30 ngày", passed: daysAfter !== null && daysAfter >= 0 && daysAfter <= 30, note: "Tính từ ngày kết thúc khóa học đến ngày thi thực tế" },
+  ];
+  const canCheck = !!record && !!form.examDate && !!form.reviewDate && form.actualScore !== "" && Number.isFinite(Number(form.actualScore)) && Number(form.actualScore) >= 0 && Number(form.actualScore) <= 10 && form.reviewDate >= form.examDate && record.learning.input_score !== null;
+  const check = () => {
+    if (!canCheck) { setValidation("Vui lòng tra cứu học viên có điểm đầu vào, nhập điểm thi thực tế (0–10) và các ngày hợp lệ."); return; }
+    setValidation(""); setShowResult(true);
+  };
+  if (showResult) return <section className="retake-review">
+    <div className="retake-heading"><h2>Kết quả xét yêu cầu học lại</h2></div>
+    <div className="retake-panel">
+      <div className="retake-result-banner"><strong>{checks.every(c => c.passed) ? "ĐẠT CÁC ĐIỀU KIỆN ĐÃ KIỂM TRA" : "CHƯA ĐẠT CÁC ĐIỀU KIỆN ĐÃ KIỂM TRA"}</strong><p>Kết quả kiểm tra sơ bộ theo ngưỡng tham khảo trong ảnh mẫu; chưa phải quyết định phê duyệt học lại.</p></div>
+      <div className="retake-result-info">
+        <span><b>Mã học viên</b>{record.student.code}</span><span><b>Học viên</b>{record.student.name}</span>
+        <span><b>Khóa học</b>{record.classroom.course}</span><span><b>Lớp học</b>{record.classroom.code}</span>
+        <span><b>Điểm đầu vào</b>{record.learning.input_score}</span><span><b>Điểm thi thực tế</b>{form.actualScore}</span>
+        <span><b>Ngày thi thực tế</b>{form.examDate}</span><span><b>Ngày xét yêu cầu</b>{form.reviewDate}</span>
+      </div>
+    </div>
+    <div className="retake-panel"><h3>Kết quả kiểm tra các điều kiện</h3>
+      <div className="tablewrap"><table className="retake-result-table"><thead><tr><th>STT</th><th>Điều kiện</th><th>Giá trị thực tế</th><th>Điều kiện tham khảo</th><th>Kết quả</th><th>Ghi chú</th></tr></thead><tbody>{checks.map((c,i)=><tr key={c.label}><td>{i+1}</td><td>{c.label}</td><td>{c.actual} {i===0?"lần":"ngày"}</td><td>{c.limit}</td><td><span className={c.passed?"retake-pass":"retake-fail"}>{c.passed?"Đạt":"Không đạt"}</span></td><td>{c.note}</td></tr>)}</tbody></table></div>
+      <p className="retake-result-count">{checks.filter(c=>c.passed).length}/{checks.length} điều kiện tham khảo đạt.</p>
+    </div>
+    {!checks.every(c=>c.passed) && <div className="retake-panel"><h3>Danh sách điều kiện không đạt</h3><ul>{checks.filter(c=>!c.passed).map(c=><li key={c.label}>{c.label}: {c.actual} (yêu cầu {c.limit})</li>)}</ul></div>}
+    <div className="retake-actions"><span>Ngưỡng 4 lần và 30 ngày lấy từ ảnh mẫu, cần xác nhận trước khi sử dụng để xét duyệt chính thức.</span><button type="button" onClick={()=>setShowResult(false)}>← Quay lại chỉnh sửa</button></div>
+  </section>;
   return <section className="retake-review">
     <div className="retake-heading"><h2>Xét duyệt yêu cầu học lại của học viên</h2></div>
     <div className="retake-panel"><div className="retake-panel-title"><span className="retake-step">01</span><div><h3>Thông tin học viên</h3><p>Nhập mã học viên để tự động điền thông tin liên quan.</p></div></div>
@@ -51,6 +81,7 @@ export default function RetakeReview() {
         <label>Tên khóa học<input value={record?.classroom?.course || ""} placeholder="Tự động hiển thị" disabled /></label>
         <label>Ngày thi thực tế <em>*</em><input type="date" value={form.examDate} onChange={e=>update("examDate",e.target.value)} /></label>
         <label>Ngày xét yêu cầu học lại <em>*</em><input type="date" value={form.reviewDate} onChange={e=>update("reviewDate",e.target.value)} /></label>
+        <label>Điểm thi thực tế <em>*</em><input type="number" min="0" max="10" step="0.5" value={form.actualScore} onChange={e=>update("actualScore",e.target.value)} placeholder="Nhập điểm thi thực tế (0–10)" /></label>
       </div>
       <div className={"retake-lookup-message" + (error ? " error" : "")} role="status">{loading ? "Đang tra cứu thông tin học viên…" : error || (choices.length > 1 && !form.classCode ? "Học viên thuộc nhiều lớp. Vui lòng chọn lớp học." : record ? "Đã tìm thấy học viên và cập nhật thông tin học tập." : "Thông tin sẽ tự động cập nhật sau khi nhập mã học viên.")}</div>
     </div>
@@ -60,7 +91,8 @@ export default function RetakeReview() {
     </div>
     <div className="retake-panel"><div className="retake-panel-title"><span className="retake-step">03</span><div><h3>Ghi chú và kiểm tra</h3><p>Ghi nhận thông tin bổ sung trước khi xét yêu cầu.</p></div></div>
       <label className="retake-note">Ghi chú của quản lý lớp học<textarea value={form.note} maxLength={500} onChange={e=>update("note",e.target.value)} placeholder="Nhập ghi chú (nếu có)..." /><span>{form.note.length}/500 ký tự</span></label>
-      <div className="retake-actions"><span>Chưa tích hợp quy định xét duyệt chính thức; hệ thống chưa thể kết luận đủ điều kiện học lại.</span><button type="button" disabled>Kiểm tra điều kiện học lại</button></div>
+      {validation && <p className="retake-validation" role="alert">{validation}</p>}
+      <div className="retake-actions"><span>Điều kiện kiểm tra hiện theo ngưỡng tham khảo của ảnh mẫu, chưa thay thế quy định chính thức.</span><button type="button" onClick={check}>Kiểm tra điều kiện học lại</button></div>
     </div>
   </section>;
 }
