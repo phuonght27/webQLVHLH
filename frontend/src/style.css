@@ -2030,3 +2030,9 @@ table.compact-stt-table > tbody > tr > td:first-child {
 .grade-single-add .grade-single-footer { display: flex; justify-content: flex-end; margin-top: 24px; }
 .grade-single-add .grade-single-footer button { min-width: 90px; padding: 10px 15px; border-radius: 5px; background: #3545e8; color: #fff; }
 @media (max-width: 550px) { .grade-single-add .grade-single-info { grid-template-columns: 1fr 1fr; gap: 12px; } .grade-single-add .grade-single-course { grid-column: span 2; } .grade-single-add .grade-single-scores { grid-template-columns: 1fr 1fr; } }
+
+.grade-management-buttons { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.grade-single-add .grade-single-selectors { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-bottom: 18px; }
+.grade-single-add .grade-single-selectors label { min-width: 0; }
+.grade-single-add .grade-single-selectors select:disabled { background: #f5f6fb; color: #8894ad; }
+@media(max-width:550px) { .grade-single-add .grade-single-selectors { grid-template-columns: 1fr; } }
