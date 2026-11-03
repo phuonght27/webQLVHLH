@@ -1938,3 +1938,7 @@ nav button {
 .app > aside .sidebar-nav .sidebar-parent,
 .app > aside .sidebar-nav .sidebar-child,
 .app > aside .logout { justify-content: flex-start; }
+
+/* Filter panels are collapsed by default and shown by their Lọc buttons. */
+.record-filter-toggle, .cm-filter-toggle { margin: 12px 0; padding: 9px 16px; border: 1px solid #d4def3; border-radius: 6px; color: #3156c5; background: #fff; font-weight: 600; cursor: pointer; }
+.record-filter-panel { margin: 8px 0 16px; }

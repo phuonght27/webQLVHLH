@@ -1243,7 +1243,8 @@ function Records({ kind, user, run, notify, refresh, reload, open }) {
     [archived, A] = useState(false),
     [detail, DE] = useState(null),
     [status, SS] = useState(""),
-    [filters, FL] = useState({});
+    [filters, FL] = useState({}),
+    [filterOpen, setFilterOpen] = useState(false);
   useEffect(() => {
     D(null);
     run(async () =>
@@ -1321,7 +1322,7 @@ if (kind === "grades" && detail?.gradePage) {
       {gradeMode ? (
         <div className="grade-management-toolbar">
           <div className="grade-management-search">
-            <button type="button" onClick={() => document.getElementById("grade-filter-panel")?.classList.toggle("is-open")}>☷ &nbsp; Lọc</button>
+            <button type="button" onClick={() => setFilterOpen(v => !v)} aria-expanded={filterOpen} aria-controls="record-filter-panel">☷ &nbsp; Lọc</button>
             <form onSubmit={e => { e.preventDefault(); SQ(q); P(1); }}>
               <input value={q} onChange={e => Q(e.target.value)} placeholder="⌕  Nhập từ khóa tìm kiếm (Họ tên, Mã học viên, ...)" />
               <button className="primary" type="submit">Tìm kiếm</button>
@@ -1332,7 +1333,7 @@ if (kind === "grades" && detail?.gradePage) {
       ) : accountMode ? (
         <div className="account-management-toolbar">
           <div className="account-management-search">
-            <button type="button" onClick={() => document.getElementById("account-filter-panel")?.classList.toggle("is-open")}>☷ &nbsp; Lọc</button>
+            <button type="button" onClick={() => setFilterOpen(v => !v)} aria-expanded={filterOpen} aria-controls="record-filter-panel">☷ &nbsp; Lọc</button>
             <form onSubmit={e => { e.preventDefault(); SQ(q); P(1); }}>
               <input value={q} onChange={e => Q(e.target.value)} placeholder="⌕  Nhập từ khóa tìm kiếm (Họ tên, Mã người dùng, Địa chỉ, SĐT, Email)" />
               <button className="primary" type="submit">Tìm kiếm</button>
@@ -1358,7 +1359,8 @@ if (kind === "grades" && detail?.gradePage) {
           </div>
         </div>
       )}
-      <div id={accountMode ? "account-filter-panel" : gradeMode ? "grade-filter-panel" : undefined} className={accountMode ? "filters account-management-filters" : gradeMode ? "filters grade-management-filters" : "filters"}>
+      {!accountMode && !gradeMode && <button type="button" className="record-filter-toggle" onClick={() => setFilterOpen(v => !v)} aria-expanded={filterOpen} aria-controls="record-filter-panel">☷ &nbsp; Lọc</button>}
+      {filterOpen && <div id="record-filter-panel" className="filters record-filter-panel">
         {result.filters?.map((f) => (
           <label key={f.name}>
             {f.label}
@@ -1408,7 +1410,7 @@ if (kind === "grades" && detail?.gradePage) {
         >
           × Xóa bộ lọc
         </button>
-      </div>
+      </div>}
       <div className={accountMode ? "card list account-management-table" : gradeMode ? "card list grade-management-table" : "card list"}>
         <div className="tablewrap">
           <table>
