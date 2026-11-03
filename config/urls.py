@@ -4,9 +4,10 @@ from django.views.generic import TemplateView
 from django.conf import settings
 from django.conf.urls.static import static
 from academy import views, homework, submission_updates
-from academy import class_management
+from academy import class_management, grade_entry
 
 urlpatterns = [
+    path("api/grade-entry/options/", grade_entry.grade_entry_options),
     path("api/class-management/sessions/<int:pk>/visibility/", class_management.session_visibility),
     path("api/class-management/options/", class_management.options),
     path("api/class-management/<str:kind>/", class_management.manage),
