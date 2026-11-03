@@ -1,6 +1,4 @@
 import ActionMenu from "./ActionMenu";
-import GradeEntry from "./GradeEntry";
-import GradeSingleAdd from "./GradeSingleAdd";
 import React, { useState, useEffect } from "react";
 import { createRoot } from "react-dom/client";
 import "./style.css";
@@ -10,7 +8,8 @@ import { api } from "./api";
 import Homework from "./Homework";
 import ClassManagement from "./ClassManagement";
 import ManagerPassword from "./ManagerPassword";
-
+import GradeEntry from "./GradeEntry";
+import GradeSingleAdd from "./GradeSingleAdd";
 import SubmissionProgress from "./SubmissionProgress";
 const sections = [
   ["⌂", "home", "Trang chủ"],
@@ -544,23 +543,10 @@ function toggleMenu(title) {
               ×
             </button>
             {modal.type === "grade-entry" ? (
-              <GradeEntry
-                notify={notify}
-                done={() => {
-                  M(null);
-                  R(x => x + 1);
-                }}
-              />
+              <GradeEntry notify={notify} done={() => { M(null); R(x => x + 1); }} />
             ) : modal.type === "grade-single-add" ? (
-              <GradeSingleAdd
-                notify={notify}
-                done={() => {
-                  M(null);
-                  R(x => x + 1);
-                }}
-              />
+              <GradeSingleAdd notify={notify} done={() => { M(null); R(x => x + 1); }} />
             ) : modal.type === "allocate" ? (
-
               <AllocationEditor
                 assignment={modal.id}
                 done={() => {
@@ -1173,7 +1159,7 @@ function GradeDetail({ data, onBack }) {
       <h3>Thông tin chi tiết điểm</h3>
 
       <div className="tablewrap grade-detail-table">
-        <table className="compact-stt-table">
+        <table>
           <thead>
             <tr>
               <th>STT</th>
@@ -1457,7 +1443,7 @@ if (kind === "grades" && detail?.gradePage) {
       </div>}
       <div className={accountMode ? "card list account-management-table" : gradeMode ? "card list grade-management-table" : "card list"}>
         <div className="tablewrap">
-          <table className="compact-stt-table">
+          <table>
             <thead>
               <tr>
                 <th>STT</th>

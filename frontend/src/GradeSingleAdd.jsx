@@ -4,7 +4,7 @@ import { api } from "./api";
 const skills = ["listening", "speaking", "reading", "writing"];
 const today = () => new Date().toLocaleDateString("en-CA");
 
-export default function GradeSingleAdd({ gradeId, notify, done }) {
+export default function GradeSingleAdd({ notify, done }) {
   const [classes, setClasses] = useState([]);
   const [members, setMembers] = useState([]);
   const [classroom, setClassroom] = useState("");
@@ -49,7 +49,6 @@ export default function GradeSingleAdd({ gradeId, notify, done }) {
     setError("");
     if (!student || !classroom || !examType || !valid) { setError("Vui lòng chọn loại bài kiểm tra và nhập đủ 4 điểm từ 0 đến 10, theo bước 0.5."); return; }
     if ((student.used_exam_types || []).includes(Number(examType))) { setError("Học viên đã có điểm cho loại bài kiểm tra này."); return; }
-    if (!window.confirm("Xác nhận lưu điểm cho học viên này?")) return;
     setBusy(true);
     try {
       await api("grades/", { enrollment: student.enrollment, exam_type: Number(examType), ...scores, exam_date: today(), note: "" }, "POST");

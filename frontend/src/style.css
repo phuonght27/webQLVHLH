@@ -1977,32 +1977,8 @@ nav button {
   outline-offset: -2px;
 }
 
-/* Compact STT column in the grade management list only. */
-.grade-management-table table th:first-child,
-.grade-management-table table td:first-child {
-  width: 48px;
-  min-width: 48px;
-  max-width: 48px;
-  box-sizing: border-box;
-  padding-left: 6px;
-  padding-right: 6px;
-  text-align: center;
-  white-space: nowrap;
-}
 
-/* Uniform compact STT column across list and detail tables with STT headers. */
-table.compact-stt-table > thead > tr > th:first-child,
-table.compact-stt-table > tbody > tr > td:first-child {
-  width: 48px !important;
-  min-width: 48px !important;
-  max-width: 48px !important;
-  padding-left: 6px !important;
-  padding-right: 6px !important;
-  text-align: center !important;
-  white-space: nowrap;
-  box-sizing: border-box;
-}
-
+/* Single student grade form */
 .grade-single-add h2 { color: #3d4ce0; }
 .grade-single-add h3 { color: #4056b7; margin-top: 22px; padding-top: 14px; border-top: 1px solid #e9edf7; }
 .grade-single-add .grade-single-info { display: grid; grid-template-columns: 1fr 2fr 1fr; gap: 12px; }

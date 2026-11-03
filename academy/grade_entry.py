@@ -1,6 +1,6 @@
 from django.http import JsonResponse
 from django.views.decorators.http import require_GET
-from .models import Enrollment, ExamType
+from .models import Enrollment, ExamType, Grade
 from .services import classes_for, can_write
 from .views import api, guard, denied
 
