@@ -4,9 +4,10 @@ from django.views.generic import TemplateView
 from django.conf import settings
 from django.conf.urls.static import static
 from academy import views, homework, submission_updates
-from academy import class_management, grade_entry, learning_data
+from academy import class_management, grade_entry, learning_data, retake_lookup
 
 urlpatterns = [
+    path("api/retake/student-lookup/", retake_lookup.retake_student_lookup),
     path("api/learning-data/", learning_data.learning_summary),
     path("api/grade-entry/options/", grade_entry.grade_entry_options),
     path("api/class-management/sessions/<int:pk>/visibility/", class_management.session_visibility),
