@@ -1,6 +1,7 @@
 import React, { useEffect, useRef, useState } from "react";
 import { api } from "./api";
 import "./RetakeReview.css";
+import "./RetakeResult.css";
 
 const empty = { studentCode: "", classCode: "", examDate: "", reviewDate: "", actualScore: "", note: "" };
 export default function RetakeReview() {
@@ -69,24 +70,45 @@ export default function RetakeReview() {
     if (message) { setValidation(message); return; }
     setValidation(""); setShowResult(true);
   };
-  if (showResult) return <section className="retake-review">
-    <div className="retake-heading"><h2>Kết quả xét yêu cầu học lại</h2></div>
-    <div className="retake-panel">
-      <div className="retake-result-banner"><strong>{checks.every(c => c.passed) ? "ĐẠT CÁC ĐIỀU KIỆN ĐÃ KIỂM TRA" : "CHƯA ĐẠT CÁC ĐIỀU KIỆN ĐÃ KIỂM TRA"}</strong><p>Kết quả kiểm tra sơ bộ theo ngưỡng tham khảo trong ảnh mẫu; chưa phải quyết định phê duyệt học lại.</p></div>
-      <div className="retake-result-info">
-        <span><b>Mã học viên</b>{record.student.code}</span><span><b>Học viên</b>{record.student.name}</span>
-        <span><b>Khóa học</b>{record.classroom.course}</span><span><b>Lớp học</b>{record.classroom.code}</span>
-        <span><b>Điểm đầu vào</b>{record.learning.input_score}</span><span><b>Điểm thi thực tế</b>{form.actualScore}</span>
-        <span><b>Ngày thi thực tế</b>{form.examDate}</span><span><b>Ngày xét yêu cầu</b>{form.reviewDate}</span>
+  if (showResult) {
+    const passed = checks.filter(c => c.passed);
+    const failed = checks.filter(c => !c.passed);
+    const fmt = value => value ? value.split("-").reverse().join("/") : "—";
+    return <section className="retake-review retake-results">
+      <div className="retake-heading"><h2>Kết quả xét yêu cầu học lại</h2></div>
+      <div className="rr-summary">
+        <div className="rr-status">
+          <span className={"rr-status-icon " + (failed.length ? "rr-bad" : "rr-good")}>{failed.length ? "✕" : "✓"}</span>
+          <div><strong className={failed.length ? "rr-red" : "rr-green"}>{failed.length ? "KHÔNG ĐỦ ĐIỀU KIỆN HỌC LẠI" : "ĐẠT CÁC ĐIỀU KIỆN ĐÃ KIỂM TRA"}</strong><p>{failed.length ? "Học viên không đáp ứng một hoặc nhiều điều kiện xét yêu cầu học lại." : "Học viên đáp ứng các điều kiện hiện được hệ thống kiểm tra."}</p></div>
+        </div>
+        <div className="rr-facts">
+          <div><b>Mã học viên:</b><strong>{record.student.code}</strong></div>
+          <div><b>Học viên:</b><strong>{record.student.name}</strong></div>
+          <div><b>Khóa học:</b><strong>{record.classroom.course}</strong></div>
+          <div><b>Lớp học:</b><strong>{record.classroom.code}</strong></div>
+          <div><b>Điểm đầu vào:</b><strong>{record.learning.input_score}</strong></div>
+          <div><b>Điểm thi thực tế:</b><strong>{form.actualScore}</strong></div>
+        </div>
+        <div className="rr-facts">
+          <div><b>Ngày thi thực tế:</b><strong>{fmt(form.examDate)}</strong></div>
+          <div><b>Ngày xét yêu cầu học lại:</b><strong>{fmt(form.reviewDate)}</strong></div>
+          <div><b>Ngày kết thúc khóa học:</b><strong>{fmt(record.classroom.end_date)}</strong></div>
+        </div>
       </div>
-    </div>
-    <div className="retake-panel"><h3>Kết quả kiểm tra các điều kiện</h3>
-      <div className="tablewrap"><table className="retake-result-table"><thead><tr><th>STT</th><th>Điều kiện</th><th>Giá trị thực tế</th><th>Điều kiện tham khảo</th><th>Kết quả</th><th>Ghi chú</th></tr></thead><tbody>{checks.map((c,i)=><tr key={c.label}><td>{i+1}</td><td>{c.label}</td><td>{c.actual} {i===0?"lần":"ngày"}</td><td>{c.limit}</td><td><span className={c.passed?"retake-pass":"retake-fail"}>{c.passed?"Đạt":"Không đạt"}</span></td><td>{c.note}</td></tr>)}</tbody></table></div>
-      <p className="retake-result-count">{checks.filter(c=>c.passed).length}/{checks.length} điều kiện tham khảo đạt.</p>
-    </div>
-    {!checks.every(c=>c.passed) && <div className="retake-panel"><h3>Danh sách điều kiện không đạt</h3><ul>{checks.filter(c=>!c.passed).map(c=><li key={c.label}>{c.label}: {c.actual} (yêu cầu {c.limit})</li>)}</ul></div>}
-    <div className="retake-actions"><span>Ngưỡng 4 lần là tham khảo từ ảnh mẫu; thời hạn thi không quá 1 tháng theo yêu cầu, cần xác nhận trước khi sử dụng để xét duyệt chính thức.</span><button type="button" onClick={()=>setShowResult(false)}>← Quay lại chỉnh sửa</button></div>
-  </section>;
+      <div className="retake-panel rr-table-panel">
+        <h3>Kết quả kiểm tra các điều kiện</h3>
+        <div className="tablewrap"><table className="retake-result-table"><thead><tr><th>STT</th><th>Điều kiện</th><th>Giá trị thực tế</th><th>Điều kiện đạt</th><th>Kết quả</th><th>Ghi chú</th></tr></thead>
+          <tbody>{checks.map((c,i)=><tr key={c.label}><td>{i+1}</td><td>{c.label}</td><td className={c.passed ? "rr-green" : "rr-red"}><b>{c.actual} {i === 0 ? "lần" : "ngày"}</b></td><td>{c.limit}</td><td><span className={"rr-pill " + (c.passed ? "rr-pill-good" : "rr-pill-bad")}>{c.passed ? "✓ Đạt" : "✕ Không đạt"}</span></td><td>{c.passed ? "Đáp ứng điều kiện" : c.note}</td></tr>)}</tbody>
+        </table></div>
+        <div className="rr-total">{failed.length ? "❗" : "✓"} Học viên {failed.length ? "không đạt" : "đạt"} {passed.length}/{checks.length} điều kiện xét yêu cầu học lại.</div>
+      </div>
+      <div className="rr-bottom">
+        <div className="retake-panel"><h3>Danh sách điều kiện không đạt</h3>{failed.length ? <ul className="rr-failed-list">{failed.map(c=><li key={c.label}>{c.label}: {c.actual} (yêu cầu {c.limit})</li>)}</ul> : <p className="rr-muted">Không có điều kiện không đạt.</p>}</div>
+        <div className="retake-panel"><h3>Kết quả chi tiết</h3><p className="rr-muted">Thông tin xét yêu cầu học lại được tổng hợp trực tiếp từ dữ liệu hệ thống.</p><p className="rr-muted">Chưa có chức năng xuất PDF kết quả.</p><button className="rr-back" type="button" onClick={()=>setShowResult(false)}>← Quay lại chỉnh sửa</button></div>
+      </div>
+      <p className="rr-disclaimer">Kết quả kiểm tra sơ bộ; điều kiện số lần thiếu bài tập hiện dùng ngưỡng tham khảo, chưa phải quyết định phê duyệt chính thức.</p>
+    </section>;
+  }
   return <section className="retake-review">
     <div className="retake-heading"><h2>Xét duyệt yêu cầu học lại của học viên</h2></div>
     <div className="retake-panel"><div className="retake-panel-title"><span className="retake-step">01</span><div><h3>Thông tin học viên</h3><p>Nhập mã học viên để tự động điền thông tin liên quan.</p></div></div>
