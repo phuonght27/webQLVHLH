@@ -2002,3 +2002,13 @@ table.compact-stt-table > tbody > tr > td:first-child {
   white-space: nowrap;
   box-sizing: border-box;
 }
+
+.grade-single-add h2 { color: #3d4ce0; }
+.grade-single-add h3 { color: #4056b7; margin-top: 22px; padding-top: 14px; border-top: 1px solid #e9edf7; }
+.grade-single-add .grade-single-info { display: grid; grid-template-columns: 1fr 2fr 1fr; gap: 12px; }
+.grade-single-add .grade-single-name { grid-column: span 2; }
+.grade-single-add .grade-single-info input { background: #f7f8fd; }
+.grade-single-add .grade-single-scores { display: grid; grid-template-columns: repeat(4,1fr); gap: 12px; }
+.grade-single-add input, .grade-single-add select { width: 100%; }
+.grade-single-add .grade-single-footer { text-align: right; margin-top: 24px; }
+@media(max-width:650px) { .grade-single-add .grade-single-info, .grade-single-add .grade-single-scores { grid-template-columns: 1fr 1fr; } }
