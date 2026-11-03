@@ -8,6 +8,7 @@ import { api } from "./api";
 import Homework from "./Homework";
 import ClassManagement from "./ClassManagement";
 import ManagerPassword from "./ManagerPassword";
+import GradeEntry from "./GradeEntry";
 import SubmissionProgress from "./SubmissionProgress";
 const sections = [
   ["⌂", "home", "Trang chủ"],
@@ -540,7 +541,9 @@ function toggleMenu(title) {
             <button className="close" onClick={() => M(null)}>
               ×
             </button>
-            {modal.type === "allocate" ? (
+            {modal.type === "grade-entry" ? (
+              <GradeEntry notify={notify} done={() => { M(null); R(x => x + 1); }} />
+            ) : modal.type === "allocate" ? (
               <AllocationEditor
                 assignment={modal.id}
                 done={() => {
@@ -1327,7 +1330,7 @@ if (kind === "grades" && detail?.gradePage) {
               <button className="primary" type="submit">Tìm kiếm</button>
             </form>
           </div>
-          {result.can_write && <button className="primary" type="button" onClick={() => open({type:"bulk",kind})}>Nhập điểm</button>}
+          {result.can_write && <button className="primary" type="button" onClick={() => open({type:"grade-entry"})}>Nhập điểm</button>}
         </div>
       ) : accountMode ? (
         <div className="account-management-toolbar">
