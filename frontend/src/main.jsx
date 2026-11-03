@@ -1,4 +1,6 @@
 import ActionMenu from "./ActionMenu";
+import GradeEntry from "./GradeEntry";
+import GradeSingleAdd from "./GradeSingleAdd";
 import React, { useState, useEffect } from "react";
 import { createRoot } from "react-dom/client";
 import "./style.css";
@@ -8,7 +10,7 @@ import { api } from "./api";
 import Homework from "./Homework";
 import ClassManagement from "./ClassManagement";
 import ManagerPassword from "./ManagerPassword";
-import GradeEntry from "./GradeEntry";
+
 import SubmissionProgress from "./SubmissionProgress";
 const sections = [
   ["⌂", "home", "Trang chủ"],
@@ -543,6 +545,7 @@ function toggleMenu(title) {
             </button>
             {modal.type === "grade-entry" ? (
               <GradeEntry notify={notify} done={() => { M(null); R(x => x + 1); }} />
+
             ) : modal.type === "allocate" ? (
               <AllocationEditor
                 assignment={modal.id}
@@ -1496,6 +1499,7 @@ if (kind === "grades" && detail?.gradePage) {
                       </button>
                       {result.can_write && (
                         <>
+                          {kind === "grades" && <button onClick={() => open({ type: "grade-single-add", id: r.id })}>＋ Thêm điểm</button>}
                           {kind === "assignments" && (
                             <button
                               onClick={() =>

@@ -20,6 +20,7 @@ urlpatterns = [
     path("api/homework/<int:pk>/files/", homework.draft_files),
     path("api/homework/<int:pk>/files/<int:file_id>/", homework.draft_files),
 
+    path("api/grade-entry/options/", grade_entry.grade_entry_options),
     path("api/auth/<str:action>/", views.auth),
     path("api/overview/", views.overview),
     path("api/progress/", views.progress),
