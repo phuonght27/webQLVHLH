@@ -45,11 +45,14 @@ def retake_student_lookup(request):
         enrollment=e, deleted_at__isnull=True, archived_at__isnull=True
     ).select_related("exam_type").order_by("exam_date")
     grade_items = [{"exam_type": g.exam_type.name, "date": g.exam_date.isoformat(), "overall": float(g.overall)} for g in grades]
+    input_grades = [g for g in grades if "đầu vào" in g.exam_type.name.casefold() or "dau vao" in g.exam_type.name.casefold() or "placement" in g.exam_type.name.casefold()]
+    input_score = float(input_grades[-1].overall) if input_grades else None
     return JsonResponse({
         "multiple": False, "classes": classes,
         "student": {"code": e.student.username, "name": e.student.full_name},
         "classroom": {"code": e.classroom.code, "course": e.classroom.course.name,
                       "end_date": e.classroom.end_date.isoformat()},
         "learning": {"missing_assignments": max(0, total - submitted),
+                     "input_score": input_score,
                      "grades": grade_items},
     })
