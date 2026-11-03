@@ -298,7 +298,12 @@ const roleMenus = [
     key: "learning",
     icon: "⌁",
     title: "Quản lý Dữ liệu Học tập",
-    roles: ["QLCN","QLLH", "HV"],
+    roles: ["QLCN","QLLH", "GV", "HV"],
+    children: [
+      { key: "learning-grades", title: "Điểm các bài kiểm tra", roles: ["QLCN","QLLH","GV","HV"] },
+      { key: "learning-submissions", title: "Trạng thái nộp bài", roles: ["QLCN","QLLH","GV","HV"] },
+      { key: "learning-comments", title: "Nhận xét bài tập", roles: ["QLCN","QLLH","GV","HV"] },
+    ],
   },
 ];
 
@@ -513,14 +518,14 @@ function toggleMenu(title) {
             )
           ) : section === "progress" ? (
             <SubmissionProgress refresh={refresh} notify={notify} />
-          ) : ["home", "learning"].includes(section) ? (
+          ) : section === "home" ? (
             <Dashboard
               learning={section === "learning"}
               run={run}
               user={user}
             />
-          ) : section === "learning" ? (
-            <LearningData />
+          ) : section.startsWith("learning-") || section === "learning" ? (
+            <LearningData key={section} selectedTab={section === "learning-submissions" ? "submissions" : section === "learning-comments" ? "comments" : "grades"} hideTabs />
           ) : (
             <Records
               key={section}
