@@ -9,6 +9,8 @@ import Homework from "./Homework";
 import ClassManagement from "./ClassManagement";
 import ManagerPassword from "./ManagerPassword";
 import GradeEntry from "./GradeEntry";
+import LearningData from "./LearningData";
+import RetakeReview from "./RetakeReview";
 import GradeSingleAdd from "./GradeSingleAdd";
 import SubmissionProgress from "./SubmissionProgress";
 const sections = [
@@ -297,7 +299,12 @@ const roleMenus = [
     key: "learning",
     icon: "⌁",
     title: "Quản lý Dữ liệu Học tập",
-    roles: ["QLCN","QLLH", "HV"],
+    roles: ["QLCN","QLLH", "GV", "HV"],
+    children: [
+      { key: "learning-grades", title: "Điểm các bài kiểm tra", roles: ["QLCN","GV","HV"] },
+      { key: "learning-submissions", title: "Trạng thái nộp bài", roles: ["QLCN","GV","HV"] },
+      { key: "learning-comments", title: "Nhận xét bài tập", roles: ["QLCN","GV","HV"] },
+    ],
   },
 ];
 
@@ -360,7 +367,7 @@ function toggleMenu(title) {
     .filter(menu => menu.roles.includes(user.role))
     .map(menu => ({
       ...menu,
-      children: menu.children?.filter(child =>
+      children: menu.key === "learning" && user.role === "QLLH" ? undefined : menu.children?.filter(child =>
         child.roles.includes(user.role) || (user.role === "QLLH" && ["courses", "shifts"].includes(child.key))
       ),
     }));
@@ -512,12 +519,16 @@ function toggleMenu(title) {
             )
           ) : section === "progress" ? (
             <SubmissionProgress refresh={refresh} notify={notify} />
-          ) : ["home", "learning"].includes(section) ? (
+          ) : section === "home" ? (
             <Dashboard
               learning={section === "learning"}
               run={run}
               user={user}
             />
+          ) : section === "learning" && user.role === "QLLH" ? (
+            <RetakeReview />
+          ) : section.startsWith("learning-") || section === "learning" ? (
+            <LearningData key={section} selectedTab={section === "learning-submissions" ? "submissions" : section === "learning-comments" ? "comments" : "grades"} hideTabs />
           ) : (
             <Records
               key={section}
