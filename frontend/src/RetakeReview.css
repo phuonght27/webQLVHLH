@@ -2,3 +2,6 @@
 /* Match the standard page-heading typography used throughout the system. */
 .retake-heading{display:block;margin-bottom:20px}
 .retake-heading h2{font-size:inherit;font-weight:700;line-height:1.4;margin:0;color:inherit}
+
+/* Editable academic metrics */
+.retake-metric input{box-sizing:border-box;width:100%;max-width:170px;min-height:42px;border:1px solid #cfdaf0;border-radius:8px;background:#fff;color:#203a78;padding:9px 11px;font-size:15px;font-weight:600}.retake-metric input:focus{outline:2px solid #c5d5ff;border-color:#7899e8}
